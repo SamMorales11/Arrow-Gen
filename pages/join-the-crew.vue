@@ -58,7 +58,7 @@
             Welcome to the Arrow Gen Pipeline!
           </h2>
           <p class="text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-            Thank you, <span class="text-zinc-200 font-semibold">{{ form.fullName }}</span>. Your creative crew application has been dispatched to our department leads. We will reach out via WhatsApp / Email within 48 hours for an informal coffee chat.
+            Thank you, <span class="text-zinc-200 font-semibold">{{ submittedName || form.fullName }}</span>. Your creative crew application has been dispatched to our department leads. We will reach out via WhatsApp / Email within 48 hours for an informal coffee chat.
           </p>
         </div>
 
@@ -319,6 +319,7 @@ type FormState = 'idle' | 'loading' | 'success' | 'error'
 
 const submissionState = ref<FormState>('idle')
 const errorMessage = ref('')
+const submittedName = ref('')
 
 const form = reactive({
   fullName: '',
@@ -407,13 +408,45 @@ const handleSubmit = async () => {
   // Trigger loading
   submissionState.value = 'loading'
 
-  // Simulate dummy backend submission
   try {
-    await new Promise(resolve => setTimeout(resolve, 1400))
+    await $fetch('/api/crew', {
+      method: 'POST',
+      body: {
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        interests: [...form.interests],
+        motivation: form.motivation.trim(),
+        portfolioLink: form.portfolioLink.trim() || undefined
+      }
+    })
+
+    // Simpan nama yang didaftarkan untuk kartu sukses
+    submittedName.value = form.fullName.trim()
+
+    // Reset Form fields setelah sukses
+    form.fullName = ''
+    form.email = ''
+    form.phone = ''
+    form.interests = []
+    form.motivation = ''
+    form.portfolioLink = ''
+    errors.fullName = ''
+    errors.email = ''
+    errors.phone = ''
+    errors.interests = ''
+    errors.motivation = ''
+    errorMessage.value = ''
+
     submissionState.value = 'success'
-  } catch {
+  } catch (err: any) {
     submissionState.value = 'error'
-    errorMessage.value = 'A connection error occurred. Please try again.'
+    const serverMsg =
+      err?.data?.message ||
+      err?.statusMessage ||
+      err?.message ||
+      'Failed to submit application. Please check your inputs and try again.'
+    errorMessage.value = serverMsg
   }
 }
 
@@ -430,6 +463,7 @@ const resetForm = () => {
   errors.interests = ''
   errors.motivation = ''
   errorMessage.value = ''
+  submittedName.value = ''
   submissionState.value = 'idle'
 }
 </script>

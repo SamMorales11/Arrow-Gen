@@ -296,22 +296,40 @@ const handleSubmit = async () => {
   if (trimmed.length < 10) {
     questionError.value = 'Please write at least 10 characters so we can understand your question.'
     submissionState.value = 'error'
-    errorMessage.value = 'Question is too short.'
+    errorMessage.value = 'Question is too short (min. 10 characters).'
     return
   }
 
   // Set loading state
   submissionState.value = 'loading'
 
-  // Simulate server submission (dummy backend turnaround)
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1200))
+    await $fetch('/api/vault', {
+      method: 'POST',
+      body: {
+        question: trimmed,
+        category: selectedCategory.value || undefined,
+        context: contextText.value.trim() || undefined
+      }
+    })
+
+    // Reset inputs upon successful submission
+    questionText.value = ''
+    contextText.value = ''
+    selectedCategory.value = ''
+    questionError.value = ''
+    errorMessage.value = ''
 
     // Set success state
     submissionState.value = 'success'
-  } catch {
+  } catch (err: any) {
     submissionState.value = 'error'
-    errorMessage.value = 'A connection error occurred. Please try again.'
+    const serverMsg =
+      err?.data?.message ||
+      err?.statusMessage ||
+      err?.message ||
+      'Failed to deposit question into The Vault. Please try again.'
+    errorMessage.value = serverMsg
   }
 }
 

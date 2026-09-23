@@ -1,0 +1,108 @@
+import { defineEventHandler, readBody, createError } from 'h3'
+import { db, schedules } from '../../database'
+
+/**
+ * ============================================================================
+ * POST /api/schedules
+ * ============================================================================
+ * Membuat entri jadwal ibadah / kegiatan baru (role Admin / Servant).
+ * Melakukan validasi ketat pada seluruh field input sebelum disimpan ke database.
+ */
+
+interface CreateScheduleBody {
+  title?: unknown
+  day?: unknown
+  time?: unknown
+  location?: unknown
+  theme?: unknown
+  isActive?: unknown
+}
+
+export default defineEventHandler(async (event) => {
+  const body = (await readBody<CreateScheduleBody>(event)) || {}
+
+  // 1. Validasi field 'title'
+  if (typeof body.title !== 'string' || !body.title.trim()) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Title is required.'
+    })
+  }
+  const cleanTitle = body.title.trim().slice(0, 255)
+  if (cleanTitle.length < 2) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Title must be at least 2 characters.'
+    })
+  }
+
+  // 2. Validasi field 'day'
+  if (typeof body.day !== 'string' || !body.day.trim()) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Day is required (e.g., Saturday, Sunday).'
+    })
+  }
+  const cleanDay = body.day.trim().slice(0, 50)
+
+  // 3. Validasi field 'time'
+  if (typeof body.time !== 'string' || !body.time.trim()) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Time is required (e.g., 17:00 WIB).'
+    })
+  }
+  const cleanTime = body.time.trim().slice(0, 50)
+
+  // 4. Validasi field 'location'
+  if (typeof body.location !== 'string' || !body.location.trim()) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Location is required.'
+    })
+  }
+  const cleanLocation = body.location.trim()
+
+  // 5. Validasi field opsional 'theme'
+  let cleanTheme: string | null = null
+  if (typeof body.theme === 'string' && body.theme.trim()) {
+    cleanTheme = body.theme.trim()
+  }
+
+  // 6. Validasi field 'isActive' (default true jika tidak ditentukan)
+  const cleanIsActive = typeof body.isActive === 'boolean' ? body.isActive : true
+
+  // 7. Simpan ke database Neon melalui Drizzle
+  try {
+    const [newSchedule] = await db
+      .insert(schedules)
+      .values({
+        title: cleanTitle,
+        day: cleanDay,
+        time: cleanTime,
+        location: cleanLocation,
+        theme: cleanTheme,
+        isActive: cleanIsActive
+      })
+      .returning()
+
+    return {
+      success: true,
+      message: 'Schedule created successfully.',
+      data: newSchedule
+    }
+  } catch (error: unknown) {
+    console.error('❌ [POST /api/schedules Error]:', error)
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Internal Server Error',
+      message: 'Failed to create schedule. Please try again later.'
+    })
+  }
+})
