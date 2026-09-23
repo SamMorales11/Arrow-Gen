@@ -1,0 +1,219 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+/* ==========================================================================
+   ARROW GEN DESIGN SYSTEM
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. Color Palette: Primitive Tokens
+     ------------------------------------------------------------------------ */
+  /* Brand Core Colors */
+  --color-black: #0a0a0a;
+
+  --color-purple: #770bba;
+  --color-purple-hover: #8d1cdb;
+  --color-purple-active: #62089b;
+
+  --color-yellow: #f5dc20;
+  --color-yellow-hover: #fae84e;
+  --color-yellow-active: #dcc415;
+
+  /* Zinc Scale (50 - 950) */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* ------------------------------------------------------------------------
+     2. Semantic Tokens
+     ------------------------------------------------------------------------ */
+  --background: var(--color-black);
+  --foreground: var(--color-zinc-50);
+
+  --muted: var(--color-zinc-900);
+  --muted-foreground: var(--color-zinc-400);
+
+  --border: var(--color-zinc-800);
+  --border-subtle: var(--color-zinc-900);
+  --border-strong: var(--color-zinc-700);
+
+  --primary: var(--color-purple);
+  --primary-hover: var(--color-purple-hover);
+  --primary-active: var(--color-purple-active);
+  --primary-foreground: #ffffff;
+
+  --accent: var(--color-yellow);
+  --accent-hover: var(--color-yellow-hover);
+  --accent-active: var(--color-yellow-active);
+  --accent-foreground: var(--color-black);
+
+  /* Typography Variables */
+  --font-family-base: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-pixel: 'Press Start 2P', monospace;
+}
+
+/* --------------------------------------------------------------------------
+   3. Tailwind v4 Theme Bridge
+   -------------------------------------------------------------------------- */
+@theme {
+  --font-sans: var(--font-family-base);
+  --font-pixel: var(--font-family-pixel);
+
+  --color-brand-black: var(--color-black);
+  --color-brand-purple: var(--color-purple);
+  --color-brand-purple-hover: var(--color-purple-hover);
+  --color-brand-yellow: var(--color-yellow);
+  --color-brand-yellow-hover: var(--color-yellow-hover);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   4. Base Styles & Global Reset
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-base);
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-800);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-purple);
+}
+
+/* --------------------------------------------------------------------------
+   5. Pixel Accent Utility Classes
+   -------------------------------------------------------------------------- */
+/* Retro Pixel Typography */
+.font-pixel {
+  font-family: var(--font-family-pixel);
+  letter-spacing: -0.05em;
+}
+
+/* Hard Drop Shadow (Pixel Art / Neo-Brutalist effect) */
+.pixel-shadow-purple {
+  box-shadow: 4px 4px 0px 0px var(--color-purple);
+}
+
+.pixel-shadow-yellow {
+  box-shadow: 4px 4px 0px 0px var(--color-yellow);
+}
+
+.pixel-shadow-zinc {
+  box-shadow: 4px 4px 0px 0px var(--color-zinc-800);
+}
+
+/* Pixel Card / Container */
+.pixel-box {
+  background-color: var(--color-zinc-950);
+  border: 2px solid var(--border);
+  box-shadow: 4px 4px 0px 0px var(--color-purple);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pixel-box:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--color-yellow);
+}
+
+/* Pixel Button Accent */
+.pixel-btn-primary {
+  font-family: var(--font-family-pixel);
+  font-size: 0.75rem;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.75rem 1.25rem;
+  border: 2px solid var(--color-zinc-100);
+  box-shadow: 4px 4px 0px 0px var(--color-yellow);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.pixel-btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translate(1px, 1px);
+  box-shadow: 3px 3px 0px 0px var(--color-yellow-hover);
+}
+
+.pixel-btn-primary:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px transparent;
+}
+
+.pixel-btn-accent {
+  font-family: var(--font-family-pixel);
+  font-size: 0.75rem;
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  padding: 0.75rem 1.25rem;
+  border: 2px solid var(--color-black);
+  box-shadow: 4px 4px 0px 0px var(--color-purple);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.pixel-btn-accent:hover {
+  background-color: var(--accent-hover);
+  transform: translate(1px, 1px);
+  box-shadow: 3px 3px 0px 0px var(--color-purple-hover);
+}
+
+.pixel-btn-accent:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px transparent;
+}
+
+/* Retro Grid Background Pattern */
+.bg-retro-grid {
+  background-image: 
+    linear-gradient(to right, rgba(39, 39, 42, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(39, 39, 42, 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
