@@ -29,8 +29,29 @@
         <slot name="leading" />
       </div>
 
+      <!-- Textarea Element -->
+      <textarea
+        v-if="type === 'textarea'"
+        :id="inputId"
+        :name="name"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :readonly="readonly"
+        :required="required"
+        :rows="rows"
+        :aria-invalid="!!error"
+        :aria-describedby="error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined"
+        :class="[inputClasses, 'resize-y min-h-[100px]']"
+        @input="handleInput"
+        @blur="$emit('blur', $event)"
+        @focus="$emit('focus', $event)"
+        @change="$emit('change', $event)"
+      />
+
       <!-- Input Element -->
       <input
+        v-else
         :id="inputId"
         :name="name"
         :type="type"
@@ -104,6 +125,7 @@ interface Props {
   autocomplete?: string
   size?: InputSize
   variant?: InputVariant
+  rows?: number | string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -120,7 +142,8 @@ const props = withDefaults(defineProps<Props>(), {
   required: false,
   autocomplete: 'off',
   size: 'md',
-  variant: 'default'
+  variant: 'default',
+  rows: 4
 })
 
 const emit = defineEmits<{

@@ -45,7 +45,7 @@ export default defineNuxtConfig({
 
     // Public keys (dapat diakses di sisi klien maupun server)
     public: {
-      // apiBase: ''
+      whatsappNumber: '6281234567890' // Dapat di-override melalui NUXT_PUBLIC_WHATSAPP_NUMBER di .env
     }
   },
 
