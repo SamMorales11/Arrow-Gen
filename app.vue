@@ -21,6 +21,10 @@ useHead({
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
     { name: 'theme-color', content: '#0a0a0a' }
   ],
+  link: [
+    { rel: 'icon', type: 'image/png', href: '/logo-arrow.png' },
+    { rel: 'apple-touch-icon', href: '/logo-arrow.png' }
+  ],
   htmlAttrs: {
     lang: 'en'
   }

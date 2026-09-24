@@ -8,9 +8,13 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
         <!-- Brand Identity Logo -->
-        <NuxtLink to="/" class="flex items-center gap-2 group shrink-0">
+        <NuxtLink to="/" class="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+          <img
+            src="/logo-arrow.png"
+            alt="Arrow Gen Logo"
+            class="h-7 sm:h-9 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
+          />
           <span class="font-pixel text-brand-yellow text-xs sm:text-sm tracking-wider flex items-center gap-2 group-hover:text-amber-300 transition-colors">
-            <span class="inline-block w-2.5 h-2.5 bg-brand-yellow animate-pulse" />
             ARROW GEN
           </span>
           <UiBadge variant="pixel" size="sm" class="hidden sm:inline-flex">
@@ -257,8 +261,13 @@
 
         <!-- Copyright & Credits -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-zinc-500">
-          <div class="flex items-center gap-3">
-            <span class="font-pixel text-[11px] text-zinc-300">▲ ARROW GEN</span>
+          <div class="flex items-center gap-2.5">
+            <img
+              src="/logo-arrow.png"
+              alt="Arrow Gen Logo"
+              class="h-4 w-auto object-contain shrink-0 opacity-80"
+            />
+            <span class="font-pixel text-[11px] text-zinc-300">ARROW GEN</span>
             <span class="text-zinc-700">|</span>
             <p>© 2026 Arrow Gen. All rights reserved.</p>
           </div>

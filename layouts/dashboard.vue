@@ -18,20 +18,29 @@
       ]"
     >
       <!-- Sidebar Brand Header -->
-      <div class="h-16 px-6 border-b border-zinc-800/80 flex items-center justify-between">
-        <NuxtLink :to="role === 'admin' ? '/admin' : '/servant'" class="flex items-center gap-2.5">
-          <span class="font-pixel text-brand-yellow text-xs tracking-wider flex items-center gap-2">
-            <span class="inline-block w-2.5 h-2.5 bg-brand-yellow"></span>
-            ARROW GEN
-          </span>
-          <UiBadge variant="pixel" size="sm">
+      <div class="h-20 px-5 border-b border-zinc-800/80 flex items-center justify-between">
+        <NuxtLink :to="role === 'admin' ? '/admin' : '/servant'" class="flex items-center gap-3 group">
+          <img
+            src="/logo-arrow.png"
+            alt="Arrow Gen Logo"
+            class="h-10 w-auto object-contain shrink-0 transition-transform group-hover:scale-105"
+          />
+          <div class="flex flex-col">
+            <span class="font-pixel text-brand-yellow text-xs tracking-wider group-hover:text-amber-300 transition-colors">
+              ARROW GEN
+            </span>
+            <span class="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">
+              {{ role === 'admin' ? 'ADMIN CONSOLE' : 'MINISTRY HUB' }}
+            </span>
+          </div>
+          <UiBadge variant="pixel" size="sm" class="ml-1 hidden sm:inline-flex">
             PORTAL
           </UiBadge>
         </NuxtLink>
 
         <!-- Close Button (Mobile only) -->
         <button
-          class="lg:hidden text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-900"
+          class="lg:hidden text-zinc-400 hover:text-white p-1.5 rounded-md hover:bg-zinc-900 ml-auto"
           aria-label="Close sidebar"
           @click="isSidebarOpen = false"
         >
@@ -189,9 +198,16 @@
 
           <!-- Breadcrumb Title -->
           <div class="flex items-center gap-2">
-            <span class="font-pixel text-[10px] text-brand-yellow hidden sm:inline">
-              ARROW GEN
-            </span>
+            <NuxtLink :to="role === 'admin' ? '/admin' : '/servant'" class="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+              <img
+                src="/logo-arrow.png"
+                alt="Arrow Gen Logo"
+                class="h-5 w-auto object-contain shrink-0"
+              />
+              <span class="font-pixel text-[10px] text-brand-yellow hidden sm:inline">
+                ARROW GEN
+              </span>
+            </NuxtLink>
             <span class="text-zinc-600 hidden sm:inline">/</span>
             <span class="text-xs sm:text-sm font-semibold text-zinc-100">
               {{ currentRouteTitle }}

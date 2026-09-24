@@ -30,7 +30,28 @@
          2. LOGIN FORM SECTION
          ==================================================================== -->
     <section class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-      <div class="w-full max-w-md">
+      <div class="w-full max-w-md space-y-6">
+
+        <!-- Prominent Brand Logo Above Form -->
+        <div class="flex flex-col items-center justify-center text-center space-y-3">
+          <NuxtLink to="/" class="inline-block group" title="Return to Arrow Gen Homepage">
+            <div class="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800/80 shadow-2xl group-hover:border-brand-purple/50 group-hover:shadow-brand-purple/20 transition-all duration-300">
+              <img
+                src="/logo-arrow.png"
+                alt="Arrow Gen Logo"
+                class="h-16 w-auto object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_16px_rgba(147,51,234,0.4)]"
+              />
+            </div>
+          </NuxtLink>
+          <div class="space-y-1">
+            <span class="font-pixel text-xs text-brand-yellow tracking-widest uppercase">
+              ARROW GEN PORTAL
+            </span>
+            <p class="text-[11px] text-zinc-500 font-sans">
+              Authorized Personnel &amp; Leadership Access
+            </p>
+          </div>
+        </div>
 
         <!-- SUCCESS STATE NOTICE -->
         <UiCard

@@ -7,6 +7,16 @@ export default defineNuxtConfig({
   // 1. Server-Side Rendering (SSR)
   ssr: true,
 
+  // App Metadata & Favicon
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/logo-arrow.png' },
+        { rel: 'apple-touch-icon', href: '/logo-arrow.png' }
+      ]
+    }
+  },
+
   // 2. TypeScript Configuration
   typescript: {
     strict: true
