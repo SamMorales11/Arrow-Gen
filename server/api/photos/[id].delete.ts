@@ -1,12 +1,14 @@
 import { defineEventHandler, getRouterParam, getQuery, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, photos } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * DELETE /api/photos/[id]
  * ============================================================================
  * Menghapus foto dari Photo Reel berdasarkan ID (UUID).
+ * - Akses terbatas: hanya untuk role 'admin'.
  * - Default: Menghapus permanen (Hard Delete) dari tabel photos.
  * - Soft Delete: Jika dikirim query param `?soft=true`, foto hanya dinonaktifkan (`isActive: false`).
  */
@@ -14,7 +16,10 @@ import { db, photos } from '../../database'
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default defineEventHandler(async (event) => {
-  // 1. Ambil dan validasi ID dari parameter rute
+  // 1. Otorisasi role: Hanya admin
+  await requireRole(event, ['admin'])
+
+  // 2. Ambil dan validasi ID dari parameter rute
   const id = getRouterParam(event, 'id')
 
   if (!id || !UUID_REGEX.test(id)) {
@@ -25,7 +30,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Periksa apakah foto ada di database
+  // 3. Periksa apakah foto ada di database
   const [existingPhoto] = await db
     .select()
     .from(photos)
@@ -72,8 +77,11 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: unknown) {
-    console.error(`❌ [DELETE /api/photos/${id} Error]:`, error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error(`❌ [DELETE /api/photos/${id} Error]:`, error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

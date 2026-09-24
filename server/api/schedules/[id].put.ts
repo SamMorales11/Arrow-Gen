@@ -1,13 +1,15 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, schedules } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * PUT /api/schedules/[id]
  * ============================================================================
  * Mengubah data jadwal yang sudah ada berdasarkan ID.
- * Mendukung pembaruan parsial maupun penuh.
+ * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
+ * - Mendukung pembaruan parsial maupun penuh.
  */
 
 interface UpdateScheduleBody {
@@ -22,7 +24,10 @@ interface UpdateScheduleBody {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default defineEventHandler(async (event) => {
-  // 1. Ambil dan validasi ID dari parameter rute
+  // 1. Otorisasi role: Hanya admin dan servant
+  await requireRole(event, ['admin', 'servant'])
+
+  // 2. Ambil dan validasi ID dari parameter rute
   const id = getRouterParam(event, 'id')
 
   if (!id || !UUID_REGEX.test(id)) {
@@ -33,7 +38,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Periksa apakah jadwal dengan ID tersebut ada di database
+  // 3. Periksa apakah jadwal dengan ID tersebut ada di database
   const [existingSchedule] = await db
     .select()
     .from(schedules)
@@ -48,7 +53,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 3. Parse dan validasi field update
+  // 4. Parse dan validasi field update
   const body = (await readBody<UpdateScheduleBody>(event)) || {}
   const updateData: Partial<typeof schedules.$inferInsert> = {
     updatedAt: new Date()
@@ -114,7 +119,7 @@ export default defineEventHandler(async (event) => {
     updateData.isActive = body.isActive
   }
 
-  // 4. Jalankan update ke database
+  // 5. Jalankan update ke database
   try {
     const [updatedSchedule] = await db
       .update(schedules)
@@ -128,8 +133,11 @@ export default defineEventHandler(async (event) => {
       data: updatedSchedule
     }
   } catch (error: unknown) {
-    console.error(`❌ [PUT /api/schedules/${id} Error]:`, error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error(`❌ [PUT /api/schedules/${id} Error]:`, error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

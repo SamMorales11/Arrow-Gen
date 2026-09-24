@@ -1,13 +1,15 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, photos } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * PUT /api/photos/[id]
  * ============================================================================
  * Mengubah data foto yang ada di Photo Reel berdasarkan ID (UUID).
- * Mendukung pembaruan URL, teks alternatif, urutan display, dan status aktif.
+ * - Akses terbatas: hanya untuk role 'admin'.
+ * - Mendukung pembaruan URL, teks alternatif, urutan display, dan status aktif.
  */
 
 interface UpdatePhotoBody {
@@ -20,7 +22,10 @@ interface UpdatePhotoBody {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default defineEventHandler(async (event) => {
-  // 1. Ambil dan validasi ID dari route parameter
+  // 1. Otorisasi role: Hanya admin
+  await requireRole(event, ['admin'])
+
+  // 2. Ambil dan validasi ID dari route parameter
   const id = getRouterParam(event, 'id')
 
   if (!id || !UUID_REGEX.test(id)) {
@@ -31,7 +36,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Periksa apakah foto ada di database
+  // 3. Periksa apakah foto ada di database
   const [existingPhoto] = await db
     .select()
     .from(photos)
@@ -46,7 +51,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 3. Parse dan validasi field update
+  // 4. Parse dan validasi field update
   const body = (await readBody<UpdatePhotoBody>(event)) || {}
   const updateData: Partial<typeof photos.$inferInsert> = {}
 
@@ -90,7 +95,7 @@ export default defineEventHandler(async (event) => {
     updateData.isActive = body.isActive
   }
 
-  // 4. Jalankan update ke database
+  // 5. Jalankan update ke database
   try {
     const [updatedPhoto] = await db
       .update(photos)
@@ -104,8 +109,11 @@ export default defineEventHandler(async (event) => {
       data: updatedPhoto
     }
   } catch (error: unknown) {
-    console.error(`❌ [PUT /api/photos/${id} Error]:`, error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error(`❌ [PUT /api/photos/${id} Error]:`, error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

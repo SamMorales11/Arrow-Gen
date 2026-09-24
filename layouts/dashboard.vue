@@ -82,23 +82,29 @@
           :key="item.path"
           :to="item.path"
           :class="[
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors select-none',
-            $route.path === item.path
-              ? 'bg-brand-purple text-white shadow-sm font-semibold'
-              : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+            'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all select-none border',
+            isRouteActive(item.path)
+              ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20 border-brand-purple/60 font-semibold'
+              : 'text-zinc-400 border-transparent hover:bg-zinc-900/90 hover:text-zinc-100 hover:border-zinc-800'
           ]"
           @click="isSidebarOpen = false"
         >
-          <component :is="item.icon" class="w-4 h-4 shrink-0" aria-hidden="true" />
+          <component
+            :is="item.icon"
+            :class="[
+              'w-4 h-4 shrink-0 transition-colors',
+              isRouteActive(item.path) ? 'text-brand-yellow' : 'text-zinc-400 group-hover:text-zinc-200'
+            ]"
+            aria-hidden="true"
+          />
           <span class="truncate">{{ item.label }}</span>
-          <UiBadge
-            v-if="item.badge"
-            :variant="item.badgeVariant || 'secondary'"
-            size="sm"
-            class="ml-auto shrink-0"
-          >
-            {{ item.badge }}
-          </UiBadge>
+
+          <!-- Active dot indicator -->
+          <span
+            v-if="isRouteActive(item.path)"
+            class="ml-auto w-1.5 h-1.5 rounded-full bg-brand-yellow shrink-0 animate-pulse"
+            aria-hidden="true"
+          />
         </NuxtLink>
 
         <!-- Role Switcher Shortcut for Admins -->
@@ -109,14 +115,14 @@
           <NuxtLink
             to="/servant"
             :class="[
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors',
-              $route.path === '/servant'
-                ? 'bg-zinc-800 text-white font-semibold'
-                : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-300'
+              'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border',
+              isRouteActive('/servant')
+                ? 'bg-zinc-800 text-white font-semibold border-zinc-700'
+                : 'text-zinc-400 border-transparent hover:bg-zinc-900 hover:text-zinc-300'
             ]"
             @click="isSidebarOpen = false"
           >
-            <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-purple-400 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
             <span>View Servant Portal</span>
@@ -142,13 +148,19 @@
           </div>
 
           <button
-            class="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors shrink-0"
+            type="button"
+            class="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors shrink-0 disabled:opacity-50"
             aria-label="Sign Out"
             title="Sign Out"
+            :disabled="isLoggingOut"
             @click="handleSignOut"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-if="!isLoggingOut" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <svg v-else class="w-4 h-4 animate-spin text-rose-400" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
           </button>
         </div>
@@ -182,7 +194,7 @@
             </span>
             <span class="text-zinc-600 hidden sm:inline">/</span>
             <span class="text-xs sm:text-sm font-semibold text-zinc-100">
-              {{ role === 'admin' ? 'Admin Control' : 'Servant Hub' }}
+              {{ currentRouteTitle }}
             </span>
           </div>
         </div>
@@ -202,10 +214,18 @@
           <UiButton
             variant="pixel"
             size="sm"
-            class="text-xs hidden sm:inline-flex"
+            class="text-xs"
+            :disabled="isLoggingOut"
             @click="handleSignOut"
           >
-            LOGOUT
+            <span v-if="!isLoggingOut">LOGOUT</span>
+            <span v-else class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              EXITING...
+            </span>
           </UiButton>
         </div>
       </header>
@@ -223,6 +243,8 @@ import { ref, computed, h } from 'vue'
 import { signOut, useSession } from '~/utils/auth-client'
 
 const isSidebarOpen = ref(false)
+const isLoggingOut = ref(false)
+const route = useRoute()
 
 // Ambil sesi user saat ini dari Better Auth
 const session = useSession()
@@ -232,10 +254,84 @@ const role = computed(() => (user.value as { role?: string })?.role || 'servant'
 const userName = computed(() => user.value?.name || (role.value === 'admin' ? 'Administrator' : 'Pelayan Tuhan'))
 const userEmail = computed(() => user.value?.email || 'authenticated@arrowgen.church')
 
-// Navigasi Khusus Admin
+// Helper penentu active state route
+const isRouteActive = (itemPath: string) => {
+  const current = route.path
+  if (itemPath === '/admin' || itemPath === '/servant') {
+    return current === itemPath
+  }
+  return current === itemPath || current.startsWith(itemPath + '/')
+}
+
+// Navigasi Khusus Admin: Vault, Schedules, Crew, Photos, Users, Dashboard Home
 const adminNavItems = [
   {
-    label: 'Overview & Analytics',
+    label: 'Vault',
+    path: '/admin/vault',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+        })
+      ])
+  },
+  {
+    label: 'Schedules',
+    path: '/admin/schedules',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+        })
+      ])
+  },
+  {
+    label: 'Crew',
+    path: '/admin/crew',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+        })
+      ])
+  },
+  {
+    label: 'Photos',
+    path: '/admin/photos',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
+        })
+      ])
+  },
+  {
+    label: 'Users',
+    path: '/admin/users',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'
+        })
+      ])
+  },
+  {
+    label: 'Dashboard Home',
     path: '/admin',
     icon: () =>
       h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -245,13 +341,15 @@ const adminNavItems = [
           'stroke-width': '2',
           d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
         })
-      ]),
-    badge: 'Live',
-    badgeVariant: 'accent' as const
-  },
+      ])
+  }
+]
+
+// Navigasi Khusus Servant (Pelayan Tuhan): Vault, Schedules, Crew, Dashboard Home
+const servantNavItems = [
   {
-    label: 'The Vault Inquiries',
-    path: '/vault',
+    label: 'Vault',
+    path: '/servant/vault',
     icon: () =>
       h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
         h('path', {
@@ -260,13 +358,24 @@ const adminNavItems = [
           'stroke-width': '2',
           d: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
         })
-      ]),
-    badge: '8 Pending',
-    badgeVariant: 'pixel' as const
+      ])
   },
   {
-    label: 'Crew Applications',
-    path: '/join-the-crew',
+    label: 'Schedules',
+    path: '/servant/schedules',
+    icon: () =>
+      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'stroke-width': '2',
+          d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+        })
+      ])
+  },
+  {
+    label: 'Crew',
+    path: '/servant/crew',
     icon: () =>
       h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
         h('path', {
@@ -275,29 +384,10 @@ const adminNavItems = [
           'stroke-width': '2',
           d: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
         })
-      ]),
-    badge: '5 New',
-    badgeVariant: 'success' as const
+      ])
   },
   {
-    label: 'Gathering Schedules',
-    path: '/schedule',
-    icon: () =>
-      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-        h('path', {
-          'stroke-linecap': 'round',
-          'stroke-linejoin': 'round',
-          'stroke-width': '2',
-          d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-        })
-      ])
-  }
-]
-
-// Navigasi Khusus Servant (Pelayan Tuhan)
-const servantNavItems = [
-  {
-    label: 'Servant Hub',
+    label: 'Dashboard Home',
     path: '/servant',
     icon: () =>
       h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
@@ -305,48 +395,7 @@ const servantNavItems = [
           'stroke-linecap': 'round',
           'stroke-linejoin': 'round',
           'stroke-width': '2',
-          d: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-        })
-      ]),
-    badge: 'Active',
-    badgeVariant: 'accent' as const
-  },
-  {
-    label: 'Gathering Schedules',
-    path: '/schedule',
-    icon: () =>
-      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-        h('path', {
-          'stroke-linecap': 'round',
-          'stroke-linejoin': 'round',
-          'stroke-width': '2',
-          d: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-        })
-      ])
-  },
-  {
-    label: 'The Vault Questions',
-    path: '/vault',
-    icon: () =>
-      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-        h('path', {
-          'stroke-linecap': 'round',
-          'stroke-linejoin': 'round',
-          'stroke-width': '2',
-          d: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-        })
-      ])
-  },
-  {
-    label: 'WhatsApp Care Channel',
-    path: '/connect',
-    icon: () =>
-      h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
-        h('path', {
-          'stroke-linecap': 'round',
-          'stroke-linejoin': 'round',
-          'stroke-width': '2',
-          d: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
+          d: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
         })
       ])
   }
@@ -357,8 +406,24 @@ const currentNavItems = computed(() => {
   return role.value === 'admin' ? adminNavItems : servantNavItems
 })
 
+// Judul breadcrumb topbar dinamis
+const currentRouteTitle = computed(() => {
+  const match = currentNavItems.value.find(item => isRouteActive(item.path))
+  if (match) return match.label
+  return role.value === 'admin' ? 'Admin Control' : 'Servant Hub'
+})
+
+// Fungsi logout terpadu
 const handleSignOut = async () => {
-  await signOut()
-  await navigateTo('/login')
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
+  try {
+    await signOut()
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    isLoggingOut.value = false
+    await navigateTo('/login', { replace: true })
+  }
 }
 </script>

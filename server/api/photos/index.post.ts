@@ -1,12 +1,14 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, photos } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * POST /api/photos
  * ============================================================================
  * Menambahkan foto baru ke dalam koleksi Photo Reel.
- * Validasi ketat pada `url`, `alt`, dan urutan `order`.
+ * - Akses terbatas: hanya untuk role 'admin'.
+ * - Validasi ketat pada `url`, `alt`, dan urutan `order`.
  */
 
 interface CreatePhotoBody {
@@ -17,9 +19,12 @@ interface CreatePhotoBody {
 }
 
 export default defineEventHandler(async (event) => {
+  // 1. Otorisasi role: Hanya admin
+  await requireRole(event, ['admin'])
+
   const body = (await readBody<CreatePhotoBody>(event)) || {}
 
-  // 1. Validasi field 'url'
+  // 2. Validasi field 'url'
   if (typeof body.url !== 'string' || !body.url.trim()) {
     throw createError({
       statusCode: 400,
@@ -29,13 +34,13 @@ export default defineEventHandler(async (event) => {
   }
   const cleanUrl = body.url.trim()
 
-  // 2. Validasi field 'alt' (opsional)
+  // 3. Validasi field 'alt' (opsional)
   let cleanAlt = ''
   if (typeof body.alt === 'string') {
     cleanAlt = body.alt.trim().slice(0, 255)
   }
 
-  // 3. Validasi field 'order' (opsional, default 0)
+  // 4. Validasi field 'order' (opsional, default 0)
   let cleanOrder = 0
   if (typeof body.order === 'number' && Number.isInteger(body.order)) {
     cleanOrder = body.order
@@ -43,10 +48,10 @@ export default defineEventHandler(async (event) => {
     cleanOrder = parseInt(body.order.trim(), 10)
   }
 
-  // 4. Validasi field 'isActive' (opsional, default true)
+  // 5. Validasi field 'isActive' (opsional, default true)
   const cleanIsActive = typeof body.isActive === 'boolean' ? body.isActive : true
 
-  // 5. Simpan ke database Neon melalui Drizzle
+  // 6. Simpan ke database Neon melalui Drizzle
   try {
     const [newPhoto] = await db
       .insert(photos)
@@ -64,8 +69,11 @@ export default defineEventHandler(async (event) => {
       data: newPhoto
     }
   } catch (error: unknown) {
-    console.error('❌ [POST /api/photos Error]:', error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error('❌ [POST /api/photos Error]:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

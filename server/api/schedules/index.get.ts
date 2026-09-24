@@ -1,17 +1,21 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { eq, asc } from 'drizzle-orm'
 import { db, schedules } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * GET /api/schedules
  * ============================================================================
  * Mengambil jadwal ibadah & fellowship.
+ * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
  * - Secara default hanya mengambil jadwal yang aktif (isActive = true).
  * - Mendukung query param ?all=true untuk mengambil semua jadwal (termasuk non-aktif).
- * - Terbuka untuk akses publik.
  */
 export default defineEventHandler(async (event) => {
+  // 1. Otorisasi role: Hanya admin dan servant
+  await requireRole(event, ['admin', 'servant'])
+
   try {
     const query = getQuery(event)
     const showAll = query.all === 'true'
@@ -29,8 +33,11 @@ export default defineEventHandler(async (event) => {
       data
     }
   } catch (error: unknown) {
-    console.error('❌ [GET /api/schedules Error]:', error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error('❌ [GET /api/schedules Error]:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

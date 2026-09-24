@@ -1,12 +1,14 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, schedules } from '../../database'
+import { requireRole } from '../../utils/session'
 
 /**
  * ============================================================================
  * POST /api/schedules
  * ============================================================================
- * Membuat entri jadwal ibadah / kegiatan baru (role Admin / Servant).
- * Melakukan validasi ketat pada seluruh field input sebelum disimpan ke database.
+ * Membuat entri jadwal ibadah / kegiatan baru.
+ * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
+ * - Melakukan validasi ketat pada seluruh field input sebelum disimpan ke database.
  */
 
 interface CreateScheduleBody {
@@ -19,9 +21,12 @@ interface CreateScheduleBody {
 }
 
 export default defineEventHandler(async (event) => {
+  // 1. Otorisasi role: Hanya admin dan servant
+  await requireRole(event, ['admin', 'servant'])
+
   const body = (await readBody<CreateScheduleBody>(event)) || {}
 
-  // 1. Validasi field 'title'
+  // 2. Validasi field 'title'
   if (typeof body.title !== 'string' || !body.title.trim()) {
     throw createError({
       statusCode: 400,
@@ -38,7 +43,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Validasi field 'day'
+  // 3. Validasi field 'day'
   if (typeof body.day !== 'string' || !body.day.trim()) {
     throw createError({
       statusCode: 400,
@@ -48,7 +53,7 @@ export default defineEventHandler(async (event) => {
   }
   const cleanDay = body.day.trim().slice(0, 50)
 
-  // 3. Validasi field 'time'
+  // 4. Validasi field 'time'
   if (typeof body.time !== 'string' || !body.time.trim()) {
     throw createError({
       statusCode: 400,
@@ -58,7 +63,7 @@ export default defineEventHandler(async (event) => {
   }
   const cleanTime = body.time.trim().slice(0, 50)
 
-  // 4. Validasi field 'location'
+  // 5. Validasi field 'location'
   if (typeof body.location !== 'string' || !body.location.trim()) {
     throw createError({
       statusCode: 400,
@@ -68,16 +73,16 @@ export default defineEventHandler(async (event) => {
   }
   const cleanLocation = body.location.trim()
 
-  // 5. Validasi field opsional 'theme'
+  // 6. Validasi field opsional 'theme'
   let cleanTheme: string | null = null
   if (typeof body.theme === 'string' && body.theme.trim()) {
     cleanTheme = body.theme.trim()
   }
 
-  // 6. Validasi field 'isActive' (default true jika tidak ditentukan)
+  // 7. Validasi field 'isActive' (default true jika tidak ditentukan)
   const cleanIsActive = typeof body.isActive === 'boolean' ? body.isActive : true
 
-  // 7. Simpan ke database Neon melalui Drizzle
+  // 8. Simpan ke database Neon melalui Drizzle
   try {
     const [newSchedule] = await db
       .insert(schedules)
@@ -97,8 +102,11 @@ export default defineEventHandler(async (event) => {
       data: newSchedule
     }
   } catch (error: unknown) {
-    console.error('❌ [POST /api/schedules Error]:', error)
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error
+    }
 
+    console.error('❌ [POST /api/schedules Error]:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal Server Error',

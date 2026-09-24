@@ -250,13 +250,12 @@ const handleLogin = async () => {
     // Extract user role from response or fallback to 'servant'
     const userRole = (res.data?.user as { role?: string } | undefined)?.role || 'servant'
 
+    const route = useRoute()
+    const targetRedirect = (route.query.redirect as string) || (userRole === 'admin' ? '/admin' : '/servant')
+
     // Delay slightly for smooth transition animation
     setTimeout(async () => {
-      if (userRole === 'admin') {
-        await navigateTo('/admin')
-      } else {
-        await navigateTo('/dashboard')
-      }
+      await navigateTo(targetRedirect)
     }, 700)
   } catch (err: any) {
     submissionState.value = 'error'
