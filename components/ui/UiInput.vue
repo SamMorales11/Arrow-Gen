@@ -13,7 +13,7 @@
         {{ label }}
         <span v-if="required" class="text-brand-yellow ml-0.5" aria-hidden="true">*</span>
       </span>
-      <span v-if="hint && !error" class="text-xs text-zinc-500 font-normal">
+      <span v-if="hint && !error" class="text-xs text-zinc-400 font-normal">
         {{ hint }}
       </span>
     </label>
@@ -23,7 +23,7 @@
       <!-- Leading Icon -->
       <div
         v-if="$slots.leading"
-        class="absolute left-3 flex items-center pointer-events-none text-zinc-500"
+        class="absolute left-3 flex items-center pointer-events-none text-zinc-400"
         aria-hidden="true"
       >
         <slot name="leading" />
@@ -73,7 +73,7 @@
       <!-- Trailing Slot -->
       <div
         v-if="$slots.trailing"
-        class="absolute right-3 flex items-center text-zinc-500"
+        class="absolute right-3 flex items-center text-zinc-400"
       >
         <slot name="trailing" />
       </div>
@@ -107,8 +107,8 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 
-export type InputSize = 'sm' | 'md' | 'lg'
-export type InputVariant = 'default' | 'pixel'
+type InputSize = 'sm' | 'md' | 'lg'
+type InputVariant = 'default' | 'pixel'
 
 interface Props {
   modelValue?: string | number
@@ -163,7 +163,7 @@ const handleInput = (event: Event) => {
 
 const inputClasses = computed(() => {
   const base = [
-    'w-full bg-zinc-900/90 text-zinc-100 placeholder:text-zinc-500 transition-colors',
+    'w-full bg-zinc-900/90 text-zinc-100 placeholder:text-zinc-400 transition-colors',
     'focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-black',
     props.disabled ? 'cursor-not-allowed bg-zinc-950/70' : 'hover:border-zinc-700'
   ]

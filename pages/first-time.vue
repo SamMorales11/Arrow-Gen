@@ -265,12 +265,22 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'First Time Here? — Plan Your Visit to Arrow Gen',
+  ogTitle: 'First Time Here? — Welcome to Arrow Gen',
+  description: 'Everything you need to know for your first visit to Arrow Gen youth and young adult church community. What to expect, parking, translations, and warm hospitality.',
+  ogDescription: 'Visiting for the first time? No dress code, no expectations, just authentic faith and community in Christ.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'First Time Here? — Welcome to Arrow Gen',
+  twitterDescription: 'Plan your first visit to Arrow Gen. Discover what to expect, parking, service times, and our friendly Welcome Team.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'First Time Here? | Arrow Gen',
-  meta: [
-    { name: 'description', content: 'Everything you need to know for your first visit to Arrow Gen youth and young adult community.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 
 const scrollToSection = (id: string) => {

@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, photos } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUuid, isValidUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -9,7 +10,8 @@ import { requireRole } from '../../utils/session'
  * ============================================================================
  * Mengubah data foto yang ada di Photo Reel berdasarkan ID (UUID).
  * - Akses terbatas: hanya untuk role 'admin'.
- * - Mendukung pembaruan URL, teks alternatif, urutan display, dan status aktif.
+ * - Validasi format UUID, protokol URL aman, dan tipe data.
+ * - Error handling aman tanpa membocorkan detail database.
  */
 
 interface UpdatePhotoBody {
@@ -19,8 +21,6 @@ interface UpdatePhotoBody {
   isActive?: unknown
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin
   await requireRole(event, ['admin'])
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   // 2. Ambil dan validasi ID dari route parameter
   const id = getRouterParam(event, 'id')
 
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -63,18 +63,26 @@ export default defineEventHandler(async (event) => {
         message: 'URL cannot be empty.'
       })
     }
-    updateData.url = body.url.trim()
+    const cleanUrl = body.url.trim()
+    if (!isValidUrl(cleanUrl)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Bad Request',
+        message: 'Invalid photo URL. Only HTTP, HTTPS, or relative paths are allowed.'
+      })
+    }
+    updateData.url = cleanUrl
   }
 
   if (body.alt !== undefined) {
-    updateData.alt = typeof body.alt === 'string' ? body.alt.trim().slice(0, 255) : ''
+    updateData.alt = typeof body.alt === 'string' ? sanitizeString(body.alt, { maxLen: 255 }) : ''
   }
 
   if (body.order !== undefined) {
     if (typeof body.order === 'number' && Number.isInteger(body.order)) {
-      updateData.order = body.order
+      updateData.order = Math.max(-1000, Math.min(1000, body.order))
     } else if (typeof body.order === 'string' && /^-?\d+$/.test(body.order.trim())) {
-      updateData.order = parseInt(body.order.trim(), 10)
+      updateData.order = Math.max(-1000, Math.min(1000, parseInt(body.order.trim(), 10)))
     } else {
       throw createError({
         statusCode: 400,
@@ -109,15 +117,6 @@ export default defineEventHandler(async (event) => {
       data: updatedPhoto
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error(`❌ [PUT /api/photos/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to update photo. Please try again later.'
-    })
+    handleServerError(error, 'Failed to update photo. Please try again later.')
   }
 })

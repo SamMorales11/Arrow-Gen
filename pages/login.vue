@@ -34,12 +34,16 @@
 
         <!-- Prominent Brand Logo Above Form -->
         <div class="flex flex-col items-center justify-center text-center space-y-3">
-          <NuxtLink to="/" class="inline-block group" title="Return to Arrow Gen Homepage">
+          <NuxtLink to="/" class="inline-block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow rounded-2xl" title="Return to Arrow Gen Homepage" aria-label="Return to Arrow Gen Homepage">
             <div class="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800/80 shadow-2xl group-hover:border-brand-purple/50 group-hover:shadow-brand-purple/20 transition-all duration-300">
               <img
                 src="/logo-arrow.png"
                 alt="Arrow Gen Logo"
-                class="h-16 w-auto object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_16px_rgba(147,51,234,0.4)]"
+                width="64"
+                height="64"
+                loading="eager"
+                decoding="async"
+                class="pixel-logo h-16 w-auto object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_16px_rgba(147,51,234,0.4)]"
               />
             </div>
           </NuxtLink>
@@ -47,7 +51,7 @@
             <span class="font-pixel text-xs text-brand-yellow tracking-widest uppercase">
               ARROW GEN PORTAL
             </span>
-            <p class="text-[11px] text-zinc-500 font-sans">
+            <p class="text-[11px] text-zinc-400 font-sans">
               Authorized Personnel &amp; Leadership Access
             </p>
           </div>
@@ -95,7 +99,7 @@
               <h2 class="text-lg font-bold text-zinc-100 font-sans">
                 Sign In to Account
               </h2>
-              <span class="font-pixel text-[10px] text-zinc-500 uppercase">
+              <span class="font-pixel text-[10px] text-zinc-400 uppercase">
                 v1.0 AUTH
               </span>
             </div>
@@ -129,7 +133,7 @@
               required
             >
               <template #leading>
-                <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                 </svg>
               </template>
@@ -138,7 +142,7 @@
             <!-- Password Input -->
             <UiInput
               v-model="form.password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               label="Password"
               placeholder="••••••••••••"
               :error="errors.password"
@@ -146,9 +150,25 @@
               required
             >
               <template #leading>
-                <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
+              </template>
+              <template #trailing>
+                <button
+                  type="button"
+                  class="p-1 text-zinc-400 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow rounded transition-colors"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                  @click="showPassword = !showPassword"
+                >
+                  <svg v-if="showPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                  </svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
               </template>
             </UiInput>
 
@@ -168,9 +188,9 @@
           </form>
 
           <!-- Help Desk Footer -->
-          <div class="pt-4 border-t border-zinc-800/80 text-center space-y-1 text-xs text-zinc-500">
+          <div class="pt-4 border-t border-zinc-800/80 text-center space-y-1 text-xs text-zinc-400">
             <p>Don't have leadership access or forgot your password?</p>
-            <p class="text-zinc-400">
+            <p class="text-zinc-300">
               Please contact the Arrow Gen Systems Administrator or WhatsApp Helpdesk.
             </p>
           </div>
@@ -207,6 +227,7 @@ type FormState = 'idle' | 'loading' | 'success' | 'error'
 
 const submissionState = ref<FormState>('idle')
 const errorMessage = ref('')
+const showPassword = ref(false)
 
 const form = reactive({
   email: '',

@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import { eq, desc, sql } from 'drizzle-orm'
 import { db, crewApplications } from '../database'
 import { requireRole } from '../utils/session'
+import { handleServerError } from '../utils/sanitize'
 
 export type CrewApplicationStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected'
 
@@ -76,15 +77,6 @@ export default defineEventHandler(async (event) => {
       data: applicants
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [GET /api/crew Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve crew applications.'
-    })
+    handleServerError(error, 'Failed to retrieve crew applications.')
   }
 })

@@ -78,13 +78,15 @@
     <!-- 3. Filter & Search Toolbar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
       <!-- Status Tabs Filter -->
-      <div class="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80">
+      <div class="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80" role="tablist" aria-label="Inquiry status filters">
         <button
           v-for="tab in statusTabs"
           :key="tab.value"
           type="button"
+          role="tab"
+          :aria-selected="activeStatus === tab.value"
           :class="[
-            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
             activeStatus === tab.value
               ? 'bg-brand-purple text-white shadow-sm font-semibold'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -124,36 +126,102 @@
       </div>
     </div>
 
-    <!-- 4. Loading State -->
+    <!-- 4. Loading State (Structured Skeleton Cards) -->
     <div v-if="pending && !vaultQuestionsList.length" class="space-y-4">
-      <UiSkeleton v-for="i in 3" :key="i" class="h-36 rounded-xl" />
+      <UiCard
+        v-for="i in 3"
+        :key="i"
+        variant="default"
+        padding="md"
+        class="border-zinc-800/80 bg-zinc-950/80 space-y-3"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UiSkeleton width="80px" height="20px" rounded="full" />
+            <UiSkeleton width="60px" height="20px" rounded="md" />
+          </div>
+          <UiSkeleton width="90px" height="16px" rounded="sm" />
+        </div>
+        <UiSkeleton width="90%" height="18px" rounded="sm" class="mt-1" />
+        <UiSkeleton width="65%" height="18px" rounded="sm" />
+        <div class="pt-2 border-t border-zinc-900 flex items-center justify-between">
+          <UiSkeleton width="120px" height="14px" rounded="sm" />
+          <UiSkeleton width="100px" height="28px" rounded="md" />
+        </div>
+      </UiCard>
     </div>
 
-    <!-- 5. Empty State -->
+    <!-- 5. Error State -->
+    <UiCard
+      v-else-if="error"
+      variant="default"
+      padding="lg"
+      class="text-center py-14 border-rose-900/60 bg-rose-950/20 space-y-4"
+    >
+      <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-sm font-semibold text-zinc-100">Unable to Retrieve Vault Inquiries</h3>
+        <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+          {{ fetchErrorMessage }}
+        </p>
+      </div>
+      <div class="pt-2 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs border-zinc-700"
+          @click="refreshData"
+        >
+          <template #leading>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </template>
+          Try Again
+        </UiButton>
+      </div>
+    </UiCard>
+
+    <!-- 6. Empty State -->
     <UiCard
       v-else-if="filteredQuestions.length === 0"
       variant="default"
       padding="lg"
-      class="text-center py-12 border-dashed border-zinc-800 bg-zinc-950/40"
+      class="text-center py-14 border-dashed border-zinc-800 bg-zinc-950/40"
     >
       <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500 mb-3">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
       </div>
-      <h3 class="text-sm font-semibold text-zinc-200">No questions available</h3>
+      <h3 class="text-sm font-semibold text-zinc-200">
+        {{ searchQuery || activeStatus !== 'all' ? 'No Matching Inquiries Found' : 'The Vault is Currently Clear' }}
+      </h3>
       <p class="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-        {{ searchQuery ? 'No questions match your search keyword.' : 'No anonymous questions recorded under this status filter.' }}
+        {{ searchQuery || activeStatus !== 'all'
+          ? 'No anonymous questions match your search filter.'
+          : 'No questions have been logged in The Vault yet. Share the anonymous link with youth members!' }}
       </p>
-      <UiButton
-        v-if="searchQuery || activeStatus !== 'all'"
-        variant="outline"
-        size="sm"
-        class="mt-4 text-xs"
-        @click="resetFilters"
-      >
-        Clear Filters
-      </UiButton>
+      <div class="mt-4 flex items-center justify-center gap-2.5">
+        <UiButton
+          v-if="searchQuery || activeStatus !== 'all'"
+          variant="outline"
+          size="sm"
+          class="text-xs"
+          @click="resetFilters"
+        >
+          Clear Filters
+        </UiButton>
+        <NuxtLink v-else to="/vault" target="_blank">
+          <UiButton variant="pixel" size="sm" class="text-xs">
+            Open Public Form &rarr;
+          </UiButton>
+        </NuxtLink>
+      </div>
     </UiCard>
 
     <!-- 6. Questions List -->
@@ -279,7 +347,8 @@
           </div>
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close inquiry dialog"
             @click="closeDetailModal"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,8 +485,14 @@ const replyForm = ref({
 })
 
 // 4. Fetch Data from GET /api/vault
-const { data: responseData, pending, refresh } = await useFetch<VaultApiResponse>('/api/vault', {
+const { data: responseData, pending, error, refresh } = await useFetch<VaultApiResponse>('/api/vault', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
+})
+
+const fetchErrorMessage = computed<string>(() => {
+  if (!error.value) return ''
+  const errData = error.value.data as { message?: string } | null | undefined
+  return errData?.message || error.value.message || 'We could not sync anonymous inquiries from the server. Please check database connectivity and retry.'
 })
 
 const refreshData = async () => {

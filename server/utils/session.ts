@@ -24,19 +24,30 @@ export async function getServerSession(event: H3Event) {
  */
 export async function requireAuth(event: H3Event) {
   const session = await getServerSession(event)
-  if (!session) {
+  if (!session || !session.user) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized',
       message: 'You must be signed in to perform this action.'
     })
   }
+
+  // Cek apakah akun dinonaktifkan oleh administrator
+  const user = session.user as { isActive?: boolean; role?: string }
+  if (user.isActive === false) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Forbidden',
+      message: 'Your account has been deactivated. Please contact an administrator.'
+    })
+  }
+
   return session
 }
 
 /**
  * Memastikan pemanggil memiliki role tertentu ('admin' atau 'servant').
- * Melempar error 403 Forbidden jika role tidak sesuai.
+ * Melempar error 403 Forbidden jika role tidak sesuai atau akun dinonaktifkan.
  */
 export async function requireRole(
   event: H3Event,

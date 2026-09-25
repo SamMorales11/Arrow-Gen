@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 import { db, users, accounts } from '../../database'
 import { requireRole } from '../../utils/session'
+import { sanitizeString, isValidEmail, handleServerError } from '../../utils/sanitize'
 
 interface CreateServantBody {
   name?: unknown
@@ -11,8 +12,6 @@ interface CreateServantBody {
   password?: unknown
   isActive?: unknown
 }
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
  * ============================================================================
@@ -22,6 +21,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * - Akses eksklusif: Hanya untuk role 'admin'.
  * - Melakukan hashing password dengan algoritma resmi Better Auth (scrypt).
  * - Mendaftarkan entri di tabel `users` dan tabel `accounts` (credential provider).
+ * - Tidak mengekspos hash atau data sensitif di response client.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin
@@ -37,10 +37,10 @@ export default defineEventHandler(async (event) => {
       message: 'Name is required and must be at least 2 characters.'
     })
   }
-  const cleanName = body.name.trim().slice(0, 255)
+  const cleanName = sanitizeString(body.name, { maxLen: 100 })
 
   // 3. Validasi field 'email'
-  if (typeof body.email !== 'string' || !EMAIL_REGEX.test(body.email.trim())) {
+  if (typeof body.email !== 'string' || !isValidEmail(body.email.trim())) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -64,12 +64,20 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 5. Validasi field 'password' (minimal 8 karakter)
+  // 5. Validasi field 'password' (8 s.d. 128 karakter)
   if (typeof body.password !== 'string' || body.password.length < 8) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
       message: 'Password is required and must be at least 8 characters long.'
+    })
+  }
+
+  if (body.password.length > 128) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Password exceeds maximum length of 128 characters.'
     })
   }
 
@@ -81,7 +89,7 @@ export default defineEventHandler(async (event) => {
     const hashedPassword = await hashPassword(body.password)
     const userId = randomUUID()
 
-    // 8. Simpan ke tabel users
+    // 8. Simpan ke tabel users (hanya ambil field publik non-sensitif di returning)
     const [newUser] = await db
       .insert(users)
       .values({
@@ -117,15 +125,6 @@ export default defineEventHandler(async (event) => {
       data: newUser
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [POST /api/users Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to create servant account. Please try again later.'
-    })
+    handleServerError(error, 'Failed to create servant account. Please try again later.')
   }
 })

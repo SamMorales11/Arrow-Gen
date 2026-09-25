@@ -14,17 +14,37 @@ import * as schema from './schema'
  * 3. Mengurangi latensi cold start secara signifikan.
  */
 
-// 1. Membaca connection string dari process.env.DATABASE_URL
-const connectionString = process.env.DATABASE_URL
+/**
+ * Memastikan connection string memiliki format yang aman dan sesuai untuk Neon PostgreSQL.
+ * Neon Serverless mewajibkan SSL/TLS (sslmode=require) saat diakses melalui internet.
+ */
+function getSafeDatabaseUrl(rawUrl?: string): string {
+  if (!rawUrl) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        '❌ [Database Fatal Error]: DATABASE_URL is not defined in environment variables! Please configure it in your Vercel project settings.'
+      )
+    }
+    console.warn(
+      '⚠️ [Database Warning]: DATABASE_URL is not set in process.env. Database operations will fail.'
+    )
+    return ''
+  }
 
-if (!connectionString && process.env.NODE_ENV !== 'production') {
-  console.warn(
-    '⚠️ [Database Warning]: DATABASE_URL is not set in process.env. Please verify your .env file.'
-  )
+  // Jika menggunakan Neon PostgreSQL dan belum memiliki parameter sslmode, tambahkan secara otomatis
+  if (rawUrl.includes('neon.tech') && !rawUrl.includes('sslmode=')) {
+    const separator = rawUrl.includes('?') ? '&' : '?'
+    return `${rawUrl}${separator}sslmode=require`
+  }
+
+  return rawUrl
 }
 
+// 1. Membaca dan memvalidasi connection string
+const connectionString = getSafeDatabaseUrl(process.env.DATABASE_URL)
+
 // 2. Inisialisasi HTTP client Neon
-const sql = neon(connectionString || '')
+const sql = neon(connectionString)
 
 // 3. Inisialisasi Drizzle ORM dengan schema registry
 export const db = drizzle(sql, { schema })

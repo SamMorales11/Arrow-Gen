@@ -7,6 +7,11 @@ export default defineNuxtConfig({
   // 1. Server-Side Rendering (SSR)
   ssr: true,
 
+  // 2. Nitro & Vercel Deployment Configuration
+  nitro: {
+    preset: process.env.VERCEL ? 'vercel' : undefined
+  },
+
   // App Metadata & Favicon
   app: {
     head: {
@@ -17,17 +22,17 @@ export default defineNuxtConfig({
     }
   },
 
-  // 2. TypeScript Configuration
+  // 3. TypeScript Configuration
   typescript: {
     strict: true
   },
 
-  // 3. Nuxt Modules
+  // 4. Nuxt Modules
   modules: [
     '@nuxtjs/google-fonts'
   ],
 
-  // 4. Google Fonts Configuration (Space Grotesk & Press Start 2P)
+  // 5. Google Fonts Configuration (Space Grotesk & Press Start 2P)
   googleFonts: {
     families: {
       'Space Grotesk': [300, 400, 500, 600, 700],
@@ -40,7 +45,7 @@ export default defineNuxtConfig({
     inject: true
   },
 
-  // 5. CSS & Tailwind CSS Integration (via Vite Plugin)
+  // 6. CSS & Tailwind CSS Integration (via Vite Plugin)
   css: ['~/assets/css/main.css'],
   vite: {
     plugins: [
@@ -48,17 +53,19 @@ export default defineNuxtConfig({
     ]
   },
 
-  // 6. Runtime Configuration (Environment Variables Placeholder)
+  // 7. Runtime Configuration (Environment Variables)
   runtimeConfig: {
     // Private keys (hanya dapat diakses di sisi server)
-    // apiSecret: '',
+    databaseUrl: process.env.DATABASE_URL || '',
+    betterAuthSecret: process.env.BETTER_AUTH_SECRET || '',
+    betterAuthUrl: process.env.BETTER_AUTH_URL || '',
 
     // Public keys (dapat diakses di sisi klien maupun server)
     public: {
-      whatsappNumber: '6281234567890' // Dapat di-override melalui NUXT_PUBLIC_WHATSAPP_NUMBER di .env
+      whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || '6281234567890'
     }
   },
 
-  // 7. Developer Experience
+  // 8. Developer Experience
   devtools: { enabled: true }
 })

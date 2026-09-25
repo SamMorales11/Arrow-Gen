@@ -25,15 +25,18 @@
         </p>
 
         <!-- Filter Category Tabs -->
-        <div class="flex flex-wrap items-center justify-center gap-2 pt-4">
+        <div class="flex flex-wrap items-center justify-center gap-2 pt-4" role="tablist" aria-label="Schedule Category Filters">
           <button
             v-for="category in categories"
             :key="category.id"
+            type="button"
+            role="tab"
+            :aria-selected="activeCategory === category.id"
             :class="[
-              'px-4 py-2 rounded-lg text-xs font-medium transition-all select-none',
+              'px-4 py-2 rounded-lg text-xs font-medium transition-all select-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none',
               activeCategory === category.id
                 ? 'bg-brand-purple text-white shadow-sm font-semibold'
-                : 'bg-zinc-900/80 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800 hover:text-white hover:border-zinc-700'
             ]"
             @click="activeCategory = category.id"
           >
@@ -66,8 +69,38 @@
         </UiBadge>
       </div>
 
+      <!-- Empty State -->
+      <UiCard
+        v-if="filteredSchedules.length === 0"
+        variant="default"
+        padding="lg"
+        class="text-center py-16 border-dashed border-zinc-800 bg-zinc-950/40 space-y-4"
+      >
+        <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-sm font-semibold text-zinc-200">No Gatherings Found in this Category</h3>
+          <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+            We currently don't have scheduled services under this specific filter. You can explore all our regular weekly gatherings below.
+          </p>
+        </div>
+        <div class="pt-2">
+          <UiButton
+            variant="outline"
+            size="sm"
+            class="text-xs"
+            @click="activeCategory = 'all'"
+          >
+            Show All Gatherings
+          </UiButton>
+        </div>
+      </UiCard>
+
       <!-- Schedule Cards Grid -->
-      <div class="space-y-6">
+      <div v-else class="space-y-6">
         <UiCard
           v-for="item in filteredSchedules"
           :key="item.id"
@@ -86,7 +119,7 @@
                 <p class="text-2xl sm:text-3xl font-bold text-zinc-100 font-sans tracking-tight">
                   {{ item.time }}
                 </p>
-                <p class="text-[11px] text-zinc-500 font-mono">
+                <p class="text-[11px] text-zinc-400 font-mono">
                   {{ item.timezone }}
                 </p>
               </div>
@@ -227,12 +260,22 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'Gathering Schedule — Weekly Services & Youth Gatherings',
+  ogTitle: 'Gathering Schedule — Arrow Gen Services & Gatherings',
+  description: 'Explore the weekly service and gathering schedule of Arrow Gen Youth & Young Adults. Join us for worship, message, and fellowship this weekend.',
+  ogDescription: 'Find service times, locations, and special events for Arrow Gen youth services, prayer nights, and community gatherings.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Gathering Schedule — Arrow Gen',
+  twitterDescription: 'Join us for worship, community, and transformative fellowship this week.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'Gathering Schedule | Arrow Gen',
-  meta: [
-    { name: 'description', content: 'Explore the weekly service and gathering schedule of Arrow Gen Youth & Young Adults.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 
 // Kategori Filter

@@ -107,15 +107,62 @@
         </svg>
         <span>{{ toastMessage }}</span>
       </div>
-      <button type="button" class="opacity-75 hover:opacity-100 text-sm" @click="toastMessage = ''">&times;</button>
+      <button type="button" class="opacity-75 hover:opacity-100 text-sm p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow" aria-label="Dismiss notification" @click="toastMessage = ''">&times;</button>
     </div>
 
-    <!-- 4. Loading Skeleton -->
+    <!-- 4. Loading Skeleton (Structured Schedule Cards) -->
     <div v-if="pending && !schedulesList.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <UiSkeleton v-for="i in 3" :key="i" class="h-52 rounded-xl" />
+      <UiCard v-for="i in 3" :key="i" variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-3">
+        <div class="flex items-center justify-between">
+          <UiSkeleton width="110px" height="20px" rounded="md" />
+          <UiSkeleton width="55px" height="20px" rounded="full" />
+        </div>
+        <UiSkeleton width="85%" height="22px" rounded="sm" />
+        <UiSkeleton width="60%" height="16px" rounded="sm" />
+        <UiSkeleton width="75%" height="14px" rounded="sm" />
+        <div class="pt-3 border-t border-zinc-900 flex justify-end gap-2">
+          <UiSkeleton width="60px" height="28px" rounded="md" />
+          <UiSkeleton width="60px" height="28px" rounded="md" />
+        </div>
+      </UiCard>
     </div>
 
-    <!-- 5. Empty State -->
+    <!-- 5. Error State -->
+    <UiCard
+      v-else-if="error"
+      variant="default"
+      padding="lg"
+      class="text-center py-14 border-rose-900/60 bg-rose-950/20 space-y-4"
+    >
+      <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-sm font-semibold text-zinc-100">Failed to Retrieve Schedules</h3>
+        <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+          {{ fetchErrorMessage }}
+        </p>
+      </div>
+      <div class="pt-2 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs border-zinc-700"
+          @click="refreshData"
+        >
+          <template #leading>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </template>
+          Try Again
+        </UiButton>
+      </div>
+    </UiCard>
+
+    <!-- 6. Empty State -->
     <UiCard
       v-else-if="schedulesList.length === 0"
       variant="default"
@@ -259,7 +306,8 @@
 
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close dialog"
             @click="closeModal"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,8 +499,14 @@ interface SchedulesResponse {
 }
 
 // 3. Fetch Data from GET /api/schedules?all=true
-const { data: apiResponse, pending, refresh } = await useFetch<SchedulesResponse>('/api/schedules?all=true', {
+const { data: apiResponse, pending, error, refresh } = await useFetch<SchedulesResponse>('/api/schedules?all=true', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
+})
+
+const fetchErrorMessage = computed<string>(() => {
+  if (!error.value) return ''
+  const errData = error.value.data as { message?: string } | null | undefined
+  return errData?.message || error.value.message || 'We encountered an error connecting to the gathering schedules database. Please try again.'
 })
 
 const schedulesList = computed<ScheduleItem[]>(() => {

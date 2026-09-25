@@ -13,9 +13,9 @@
 <script setup lang="ts">
 import { computed, type CSSProperties } from 'vue'
 
-export type SkeletonVariant = 'text' | 'circular' | 'rectangular' | 'card' | 'pixel'
-export type SkeletonAnimation = 'pulse' | 'wave' | 'none'
-export type SkeletonRounded = 'none' | 'sm' | 'md' | 'lg' | 'full'
+type SkeletonVariant = 'text' | 'circular' | 'rectangular' | 'card' | 'pixel'
+type SkeletonAnimation = 'pulse' | 'wave' | 'none'
+type SkeletonRounded = 'none' | 'sm' | 'md' | 'lg' | 'full'
 
 interface Props {
   variant?: SkeletonVariant

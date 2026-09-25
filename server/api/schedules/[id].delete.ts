@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, getQuery, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, schedules } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUuid, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -11,9 +12,8 @@ import { requireRole } from '../../utils/session'
  * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
  * - Default: Melakukan Soft Delete dengan menandai `isActive: false` agar histori tetap aman.
  * - Permanent: Jika query param `?permanent=true`, jadwal akan dihapus secara permanen dari database.
+ * - Error handling aman tanpa kebocoran data internal database.
  */
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin dan servant
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   // 2. Ambil dan validasi ID dari parameter rute
   const id = getRouterParam(event, 'id')
 
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -80,15 +80,6 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error(`❌ [DELETE /api/schedules/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to delete schedule. Please try again later.'
-    })
+    handleServerError(error, 'Failed to delete schedule. Please try again later.')
   }
 })

@@ -1,7 +1,8 @@
-import { defineEventHandler, getQuery, createError } from 'h3'
+import { defineEventHandler, getQuery } from 'h3'
 import { eq, asc } from 'drizzle-orm'
 import { db, schedules } from '../../database'
 import { requireRole } from '../../utils/session'
+import { handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -33,15 +34,6 @@ export default defineEventHandler(async (event) => {
       data
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [GET /api/schedules Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve schedules. Please try again later.'
-    })
+    handleServerError(error, 'Failed to retrieve schedules. Please try again later.')
   }
 })

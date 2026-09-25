@@ -106,13 +106,27 @@
         <!-- Global Error Alert (if error state) -->
         <div
           v-if="submissionState === 'error'"
-          class="p-4 rounded-lg bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2.5"
+          class="p-4 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in"
           role="alert"
         >
-          <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>{{ errorMessage || 'Something went wrong while submitting. Please check your question and try again.' }}</span>
+          <div class="flex items-start sm:items-center gap-2.5">
+            <svg class="w-5 h-5 shrink-0 text-rose-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p class="font-semibold text-rose-100">Unable to Deposit Question</p>
+              <p class="text-rose-300/90 text-[11px] mt-0.5">{{ errorMessage || 'We experienced an issue depositing your question into The Vault. Please verify the fields below and try again.' }}</p>
+            </div>
+          </div>
+          <UiButton
+            type="button"
+            variant="outline"
+            size="sm"
+            class="text-[11px] border-rose-700/60 hover:bg-rose-900/40 text-rose-200 shrink-0 self-start sm:self-auto"
+            @click="handleSubmit"
+          >
+            Retry Submission
+          </UiButton>
         </div>
 
         <form class="space-y-6" @submit.prevent="handleSubmit">
@@ -120,20 +134,21 @@
           <!-- Category Selection (Optional) -->
           <div class="space-y-2">
             <label class="text-sm font-medium text-zinc-200 select-none flex items-center justify-between">
-              <span>Topic Category <span class="text-zinc-500 font-normal text-xs">(Optional)</span></span>
-              <span class="text-xs text-zinc-500 font-mono">Helps direct to the right pastor</span>
+              <span>Topic Category <span class="text-zinc-400 font-normal text-xs">(Optional)</span></span>
+              <span class="text-xs text-zinc-400 font-mono">Helps direct to the right pastor</span>
             </label>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" role="group" aria-label="Topic Category Options">
               <button
                 v-for="cat in categories"
                 :key="cat"
                 type="button"
+                :aria-pressed="selectedCategory === cat"
                 :class="[
-                  'px-3 py-2 rounded-lg text-xs font-medium text-left transition-all border select-none',
+                  'px-3 py-2 rounded-lg text-xs font-medium text-left transition-all border select-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none',
                   selectedCategory === cat
                     ? 'bg-brand-purple/20 border-brand-purple text-purple-200'
-                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
                 ]"
                 @click="selectedCategory = selectedCategory === cat ? '' : cat"
               >
@@ -171,16 +186,16 @@
               id="confirm-anon"
               v-model="acknowledgement"
               type="checkbox"
-              class="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-brand-purple focus:ring-brand-purple"
+              class="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-brand-purple focus:ring-brand-purple focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none"
             />
-            <label for="confirm-anon" class="text-xs text-zinc-400 cursor-pointer select-none leading-relaxed">
+            <label for="confirm-anon" class="text-xs text-zinc-300 cursor-pointer select-none leading-relaxed">
               I understand that this question is submitted anonymously and will be reviewed solely by the internal pastoral team for ministry guidance.
             </label>
           </div>
 
           <!-- Action Buttons -->
           <div class="pt-4 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p class="text-[11px] text-zinc-500 font-mono">
+            <p class="text-[11px] text-zinc-400 font-mono">
               STATUS: {{ submissionState.toUpperCase() }}
             </p>
 
@@ -249,12 +264,22 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'The Vault — Anonymous Questions & Pastoral Guidance',
+  ogTitle: 'The Vault — Anonymous Inquiries & Spiritual Answers',
+  description: 'Submit honest, anonymous questions about faith, theology, relationships, doubts, and life to the Arrow Gen pastoral and leadership team in a confidential safe haven.',
+  ogDescription: 'A secure, anonymous space to ask hard questions without fear or judgment. Pastoral guidance for youth & young adults.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'The Vault — Anonymous Questions | Arrow Gen',
+  twitterDescription: 'Submit honest, anonymous questions to Arrow Gen pastoral team in a safe, confidential environment.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'The Vault — Anonymous Questions | Arrow Gen',
-  meta: [
-    { name: 'description', content: 'Submit anonymous questions to the Arrow Gen pastoral and leadership team in a secure, confidential space.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 
 // Form State

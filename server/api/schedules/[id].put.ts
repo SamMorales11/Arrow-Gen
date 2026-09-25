@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, schedules } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUuid, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -9,7 +10,8 @@ import { requireRole } from '../../utils/session'
  * ============================================================================
  * Mengubah data jadwal yang sudah ada berdasarkan ID.
  * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
- * - Mendukung pembaruan parsial maupun penuh.
+ * - Memvalidasi format UUID dan sanitasi nilai string input.
+ * - Error handling aman tanpa membocorkan detail database.
  */
 
 interface UpdateScheduleBody {
@@ -21,8 +23,6 @@ interface UpdateScheduleBody {
   isActive?: unknown
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin dan servant
   await requireRole(event, ['admin', 'servant'])
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   // 2. Ambil dan validasi ID dari parameter rute
   const id = getRouterParam(event, 'id')
 
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
         message: 'Title cannot be empty.'
       })
     }
-    updateData.title = body.title.trim().slice(0, 255)
+    updateData.title = sanitizeString(body.title, { maxLen: 255 })
   }
 
   if (body.day !== undefined) {
@@ -78,7 +78,7 @@ export default defineEventHandler(async (event) => {
         message: 'Day cannot be empty.'
       })
     }
-    updateData.day = body.day.trim().slice(0, 50)
+    updateData.day = sanitizeString(body.day, { maxLen: 50 })
   }
 
   if (body.time !== undefined) {
@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
         message: 'Time cannot be empty.'
       })
     }
-    updateData.time = body.time.trim().slice(0, 50)
+    updateData.time = sanitizeString(body.time, { maxLen: 50 })
   }
 
   if (body.location !== undefined) {
@@ -100,12 +100,14 @@ export default defineEventHandler(async (event) => {
         message: 'Location cannot be empty.'
       })
     }
-    updateData.location = body.location.trim()
+    updateData.location = sanitizeString(body.location, { maxLen: 255 })
   }
 
   if (body.theme !== undefined) {
     updateData.theme =
-      typeof body.theme === 'string' && body.theme.trim() ? body.theme.trim() : null
+      typeof body.theme === 'string' && body.theme.trim()
+        ? sanitizeString(body.theme, { maxLen: 255 })
+        : null
   }
 
   if (body.isActive !== undefined) {
@@ -133,15 +135,6 @@ export default defineEventHandler(async (event) => {
       data: updatedSchedule
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error(`❌ [PUT /api/schedules/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to update schedule. Please try again later.'
-    })
+    handleServerError(error, 'Failed to update schedule. Please try again later.')
   }
 })

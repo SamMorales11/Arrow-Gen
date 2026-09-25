@@ -45,11 +45,31 @@
       </div>
     </div>
 
-    <!-- 2. Loading State -->
+    <!-- 2. Loading State (Structured Skeletons) -->
     <div v-if="pending && !question" class="space-y-6">
-      <UiSkeleton class="h-28 rounded-xl" />
-      <UiSkeleton class="h-56 rounded-xl" />
-      <UiSkeleton class="h-64 rounded-xl" />
+      <UiCard variant="default" padding="lg" class="border-zinc-800 bg-zinc-950/80 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <UiSkeleton width="90px" height="24px" rounded="full" />
+            <UiSkeleton width="70px" height="20px" rounded="md" />
+          </div>
+          <UiSkeleton width="110px" height="16px" rounded="sm" />
+        </div>
+        <UiSkeleton width="92%" height="24px" rounded="sm" class="mt-2" />
+        <UiSkeleton width="65%" height="20px" rounded="sm" />
+        <UiSkeleton width="45%" height="16px" rounded="sm" />
+      </UiCard>
+
+      <UiCard variant="default" padding="lg" class="border-zinc-800 bg-zinc-950/80 space-y-4">
+        <div class="space-y-1">
+          <UiSkeleton width="160px" height="20px" rounded="sm" />
+          <UiSkeleton width="220px" height="14px" rounded="sm" />
+        </div>
+        <UiSkeleton width="100%" height="130px" rounded="lg" />
+        <div class="flex justify-end gap-3 pt-2">
+          <UiSkeleton width="120px" height="36px" rounded="md" />
+        </div>
+      </UiCard>
     </div>
 
     <!-- 3. Error / Not Found State -->
@@ -57,22 +77,34 @@
       v-else-if="error || !question"
       variant="default"
       padding="lg"
-      class="text-center py-12 border-rose-900/40 bg-zinc-950/60"
+      class="text-center py-14 border-rose-900/60 bg-rose-950/20 space-y-4"
     >
-      <div class="w-12 h-12 rounded-full bg-rose-950/50 border border-rose-800/60 flex items-center justify-center mx-auto text-rose-400 mb-3">
+      <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <h2 class="text-base font-semibold text-zinc-100">Question Not Found</h2>
-      <p class="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
-        The requested anonymous submission could not be located.
-      </p>
-      <NuxtLink to="/servant/vault" class="inline-block mt-4">
-        <UiButton variant="pixel" size="sm" class="text-xs">
-          Return to Vault List
+      <div class="space-y-1">
+        <h2 class="text-base font-semibold text-zinc-100">Question Not Found or Failed to Load</h2>
+        <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+          The requested anonymous question could not be retrieved from the server.
+        </p>
+      </div>
+      <div class="pt-2 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs border-zinc-700"
+          @click="refreshData"
+        >
+          Try Again
         </UiButton>
-      </NuxtLink>
+        <NuxtLink to="/servant/vault">
+          <UiButton variant="pixel" size="sm" class="text-xs">
+            Return to Vault List
+          </UiButton>
+        </NuxtLink>
+      </div>
     </UiCard>
 
     <!-- 4. Main Detail & Response Content -->
@@ -186,11 +218,11 @@
             <label class="font-pixel text-[11px] text-zinc-300 block uppercase tracking-wider">
               INQUIRY STATUS
             </label>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Inquiry status">
               <!-- Pending Option -->
               <label
                 :class="[
-                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all',
+                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all focus-within:ring-2 focus-within:ring-brand-yellow',
                   form.status === 'pending'
                     ? 'bg-amber-950/30 border-brand-yellow text-zinc-100 shadow-sm'
                     : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-900'
@@ -204,14 +236,14 @@
                 />
                 <div>
                   <p class="text-xs font-semibold text-zinc-200">Pending</p>
-                  <p class="text-[10px] text-zinc-500">Prayer target / in progress</p>
+                  <p class="text-[10px] text-zinc-400">Prayer target / in progress</p>
                 </div>
               </label>
 
               <!-- Answered Option -->
               <label
                 :class="[
-                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all',
+                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all focus-within:ring-2 focus-within:ring-brand-yellow',
                   form.status === 'answered'
                     ? 'bg-emerald-950/30 border-emerald-500 text-zinc-100 shadow-sm'
                     : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-900'
@@ -225,14 +257,14 @@
                 />
                 <div>
                   <p class="text-xs font-semibold text-zinc-200">Answered</p>
-                  <p class="text-[10px] text-zinc-500">Resolved &amp; counsel ready</p>
+                  <p class="text-[10px] text-zinc-400">Resolved &amp; counsel ready</p>
                 </div>
               </label>
 
               <!-- Rejected Option -->
               <label
                 :class="[
-                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all',
+                  'flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all focus-within:ring-2 focus-within:ring-brand-yellow',
                   form.status === 'rejected'
                     ? 'bg-zinc-800/80 border-zinc-600 text-zinc-100 shadow-sm'
                     : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-900'
@@ -246,7 +278,7 @@
                 />
                 <div>
                   <p class="text-xs font-semibold text-zinc-200">Rejected</p>
-                  <p class="text-[10px] text-zinc-500">Filtered or off-topic</p>
+                  <p class="text-[10px] text-zinc-400">Filtered or off-topic</p>
                 </div>
               </label>
             </div>

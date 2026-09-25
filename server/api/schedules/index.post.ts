@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, schedules } from '../../database'
 import { requireRole } from '../../utils/session'
+import { sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -8,7 +9,8 @@ import { requireRole } from '../../utils/session'
  * ============================================================================
  * Membuat entri jadwal ibadah / kegiatan baru.
  * - Akses dilindungi: Hanya untuk user terotentikasi dengan role 'admin' atau 'servant'.
- * - Melakukan validasi ketat pada seluruh field input sebelum disimpan ke database.
+ * - Melakukan sanitasi dan validasi ketat pada seluruh field input.
+ * - Error handling aman tanpa kebocoran data database.
  */
 
 interface CreateScheduleBody {
@@ -34,7 +36,7 @@ export default defineEventHandler(async (event) => {
       message: 'Title is required.'
     })
   }
-  const cleanTitle = body.title.trim().slice(0, 255)
+  const cleanTitle = sanitizeString(body.title, { maxLen: 255 })
   if (cleanTitle.length < 2) {
     throw createError({
       statusCode: 400,
@@ -51,7 +53,7 @@ export default defineEventHandler(async (event) => {
       message: 'Day is required (e.g., Saturday, Sunday).'
     })
   }
-  const cleanDay = body.day.trim().slice(0, 50)
+  const cleanDay = sanitizeString(body.day, { maxLen: 50 })
 
   // 4. Validasi field 'time'
   if (typeof body.time !== 'string' || !body.time.trim()) {
@@ -61,7 +63,7 @@ export default defineEventHandler(async (event) => {
       message: 'Time is required (e.g., 17:00 WIB).'
     })
   }
-  const cleanTime = body.time.trim().slice(0, 50)
+  const cleanTime = sanitizeString(body.time, { maxLen: 50 })
 
   // 5. Validasi field 'location'
   if (typeof body.location !== 'string' || !body.location.trim()) {
@@ -71,12 +73,12 @@ export default defineEventHandler(async (event) => {
       message: 'Location is required.'
     })
   }
-  const cleanLocation = body.location.trim()
+  const cleanLocation = sanitizeString(body.location, { maxLen: 255 })
 
   // 6. Validasi field opsional 'theme'
   let cleanTheme: string | null = null
   if (typeof body.theme === 'string' && body.theme.trim()) {
-    cleanTheme = body.theme.trim()
+    cleanTheme = sanitizeString(body.theme, { maxLen: 255 })
   }
 
   // 7. Validasi field 'isActive' (default true jika tidak ditentukan)
@@ -102,15 +104,6 @@ export default defineEventHandler(async (event) => {
       data: newSchedule
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [POST /api/schedules Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to create schedule. Please try again later.'
-    })
+    handleServerError(error, 'Failed to create schedule. Please try again later.')
   }
 })

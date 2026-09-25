@@ -3,9 +3,7 @@ import { eq, and, ne } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 import { db, users, accounts } from '../../database'
 import { requireRole } from '../../utils/session'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { isValidUuid, isValidEmail, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 interface PatchUserBody {
   name?: unknown
@@ -21,6 +19,7 @@ interface PatchUserBody {
  * Memperbarui akun user (status aktif, nama, email, atau reset password).
  * - Akses eksklusif: Hanya untuk role 'admin'.
  * - Jika password diubah, di-hash ulang dan disinkronkan ke tabel `accounts`.
+ * - Error handling aman tanpa kebocoran data sensitif.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin
@@ -28,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validasi ID parameter (UUID)
   const id = getRouterParam(event, 'id')
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -66,12 +65,12 @@ export default defineEventHandler(async (event) => {
         message: 'Name must be at least 2 characters.'
       })
     }
-    updateData.name = body.name.trim().slice(0, 255)
+    updateData.name = sanitizeString(body.name, { maxLen: 100 })
   }
 
   // 6. Validasi & proses 'email'
   if (body.email !== undefined) {
-    if (typeof body.email !== 'string' || !EMAIL_REGEX.test(body.email.trim())) {
+    if (typeof body.email !== 'string' || !isValidEmail(body.email.trim())) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Bad Request',
@@ -119,6 +118,13 @@ export default defineEventHandler(async (event) => {
         message: 'Password must be at least 8 characters long.'
       })
     }
+    if (body.password.length > 128) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Bad Request',
+        message: 'Password exceeds maximum length of 128 characters.'
+      })
+    }
     newHashedPassword = await hashPassword(body.password)
     updateData.passwordHash = newHashedPassword
   }
@@ -156,15 +162,6 @@ export default defineEventHandler(async (event) => {
       data: updatedUser
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error(`❌ [PATCH /api/users/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to update user account in database.'
-    })
+    handleServerError(error, 'Failed to update user account in database.')
   }
 })

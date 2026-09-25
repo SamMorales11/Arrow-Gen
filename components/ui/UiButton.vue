@@ -60,8 +60,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost' | 'pixel'
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
+type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost' | 'pixel' | 'danger'
+type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 interface Props {
   variant?: ButtonVariant
@@ -143,6 +143,12 @@ const buttonClasses = computed(() => {
       'focus-visible:ring-brand-purple'
     ].join(' '),
 
+    danger: [
+      'bg-rose-600 text-white shadow-sm font-medium',
+      'hover:bg-rose-700 active:bg-rose-800',
+      'focus-visible:ring-rose-500'
+    ].join(' '),
+
     pixel: [
       'font-pixel rounded-none border-2 border-zinc-100 bg-brand-purple text-white',
       'shadow-pixel-yellow hover:translate-x-0.5 hover:translate-y-0.5',
@@ -151,6 +157,6 @@ const buttonClasses = computed(() => {
     ].join(' ')
   }
 
-  return [...base, sizes[props.size], variants[props.variant]].join(' ')
+  return [...base, sizes[props.size], variants[props.variant] || variants.primary].join(' ')
 })
 </script>

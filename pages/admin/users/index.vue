@@ -86,13 +86,15 @@
     <!-- 3. Filter & Search Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
       <!-- Status Tabs -->
-      <div class="flex items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80">
+      <div class="flex items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80" role="tablist" aria-label="Account status filters">
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
           type="button"
+          role="tab"
+          :aria-selected="activeFilter === tab.value"
           :class="[
-            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
             activeFilter === tab.value
               ? 'bg-brand-purple text-white shadow-sm font-semibold'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -258,8 +260,9 @@
           <!-- Delete User Button -->
           <button
             type="button"
-            class="p-2 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+            class="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
             title="Delete servant account permanently"
+            aria-label="Delete servant account permanently"
             @click="openDeleteDialog(user)"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +287,8 @@
           </div>
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close dialog"
             @click="isCreateModalOpen = false"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -411,7 +415,8 @@
           </div>
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close dialog"
             @click="editingUser = null"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -559,10 +564,10 @@
             Cancel
           </UiButton>
           <UiButton
-            variant="danger"
+            variant="outline"
             size="sm"
             :loading="isDeletingUser"
-            class="text-xs"
+            class="text-xs bg-rose-600 hover:bg-rose-500 text-white border-rose-600 hover:border-rose-500"
             @click="confirmDeleteUser"
           >
             Delete Account
@@ -587,7 +592,7 @@ useHead({
 })
 
 // 2. Types & Interfaces
-export interface ServantUser {
+interface ServantUser {
   id: string
   name: string
   email: string
@@ -599,7 +604,7 @@ export interface ServantUser {
   updatedAt: string
 }
 
-export interface UsersApiResponse {
+interface UsersApiResponse {
   success: boolean
   message: string
   total: number
@@ -639,7 +644,7 @@ const deletingUser = ref<ServantUser | null>(null)
 const isDeletingUser = ref(false)
 
 // 4. Fetch Users (role: servant) from API
-const { data: apiResponse, pending, refresh } = await useFetch<UsersApiResponse>('/api/users?role=servant', {
+const { data: apiResponse, pending, error, refresh } = await useFetch<UsersApiResponse>('/api/users?role=servant', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
 })
 

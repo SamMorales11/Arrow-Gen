@@ -12,6 +12,8 @@
          1. SIDEBAR INTERNAL (Admin & Servant Dynamic Navigation)
          ==================================================================== -->
     <aside
+      id="dashboard-sidebar"
+      aria-label="Dashboard Sidebar"
       :class="[
         'fixed top-0 bottom-0 left-0 z-50 w-72 bg-zinc-950 border-r border-zinc-800/80 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-auto',
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -23,7 +25,11 @@
           <img
             src="/logo-arrow.png"
             alt="Arrow Gen Logo"
-            class="h-10 w-auto object-contain shrink-0 transition-transform group-hover:scale-105"
+            width="40"
+            height="40"
+            loading="eager"
+            decoding="async"
+            class="pixel-logo h-10 w-auto object-contain shrink-0 transition-transform group-hover:scale-105"
           />
           <div class="flex flex-col">
             <span class="font-pixel text-brand-yellow text-xs tracking-wider group-hover:text-amber-300 transition-colors">
@@ -40,8 +46,9 @@
 
         <!-- Close Button (Mobile only) -->
         <button
-          class="lg:hidden text-zinc-400 hover:text-white p-1.5 rounded-md hover:bg-zinc-900 ml-auto"
-          aria-label="Close sidebar"
+          type="button"
+          class="lg:hidden text-zinc-400 hover:text-white p-1.5 rounded-md hover:bg-zinc-900 ml-auto focus-visible:ring-2 focus-visible:ring-brand-yellow focus:outline-none"
+          aria-label="Close navigation sidebar"
           @click="isSidebarOpen = false"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +89,7 @@
 
       <!-- Navigation Links (Dynamic by Role) -->
       <nav class="flex-1 px-3.5 py-4 space-y-1.5 overflow-y-auto">
-        <p class="px-2 pb-2 text-[10px] font-pixel text-zinc-500 uppercase tracking-widest">
+        <p class="px-2 pb-2 text-[10px] font-pixel text-zinc-400 uppercase tracking-widest">
           {{ role === 'admin' ? 'ADMINISTRATION' : 'MINISTRY WORKSPACE' }}
         </p>
 
@@ -118,7 +125,7 @@
 
         <!-- Role Switcher Shortcut for Admins -->
         <div v-if="role === 'admin'" class="pt-4 mt-4 border-t border-zinc-900">
-          <p class="px-2 pb-2 text-[10px] font-pixel text-zinc-500 uppercase tracking-widest">
+          <p class="px-2 pb-2 text-[10px] font-pixel text-zinc-400 uppercase tracking-widest">
             SWITCH WORKSPACE
           </p>
           <NuxtLink
@@ -189,6 +196,8 @@
             size="icon"
             class="lg:hidden"
             aria-label="Toggle Navigation Sidebar"
+            :aria-expanded="isSidebarOpen"
+            aria-controls="dashboard-sidebar"
             @click="isSidebarOpen = true"
           >
             <svg class="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,13 +211,17 @@
               <img
                 src="/logo-arrow.png"
                 alt="Arrow Gen Logo"
-                class="h-5 w-auto object-contain shrink-0"
+                width="20"
+                height="20"
+                loading="eager"
+                decoding="async"
+                class="pixel-logo h-5 w-auto object-contain shrink-0"
               />
               <span class="font-pixel text-[10px] text-brand-yellow hidden sm:inline">
                 ARROW GEN
               </span>
             </NuxtLink>
-            <span class="text-zinc-600 hidden sm:inline">/</span>
+            <span class="text-zinc-400 hidden sm:inline">/</span>
             <span class="text-xs sm:text-sm font-semibold text-zinc-100">
               {{ currentRouteTitle }}
             </span>

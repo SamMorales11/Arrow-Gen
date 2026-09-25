@@ -2,8 +2,7 @@ import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, crewApplications } from '../../database'
 import { requireRole } from '../../utils/session'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isValidUuid, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -12,7 +11,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Mengambil detail lengkap satu pendaftar Join The Crew berdasarkan UUID.
  * - Akses terbatas: hanya untuk role 'admin' dan 'servant'.
  * - Memvalidasi format UUID.
- * - Mengembalikan data pendaftar lengkap termasuk kontak, minat, motivasi, dan status.
+ * - Mengembalikan data pendaftar lengkap tanpa membocorkan error internal.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin dan servant
@@ -20,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validasi format router parameter ID
   const id = getRouterParam(event, 'id')
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -52,15 +51,6 @@ export default defineEventHandler(async (event) => {
       data: applicant
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error(`❌ [GET /api/crew/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve crew applicant details.'
-    })
+    handleServerError(error, 'Failed to retrieve crew applicant details.')
   }
 })

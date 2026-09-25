@@ -86,11 +86,21 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'Connect & Pastoral Care — We Are Here to Listen and Pray',
+  ogTitle: 'Connect & Pastoral Care — Arrow Gen',
+  description: 'Need someone to talk to, ask questions, or pray with? Connect directly and confidentially with the Arrow Gen pastoral host team via WhatsApp or in person.',
+  ogDescription: 'Reach out to our pastoral team for prayer, guidance, or simply finding a friendly face this week.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Connect with Arrow Gen Pastoral Care',
+  twitterDescription: 'Confidential prayer and pastoral care for youth and young adults.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'Connect & Pastoral Chat | Arrow Gen',
-  meta: [
-    { name: 'description', content: 'Need someone to talk to or pray with? Connect directly with the Arrow Gen team via WhatsApp.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 </script>

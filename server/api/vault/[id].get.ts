@@ -2,8 +2,7 @@ import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, vaultQuestions, users } from '../../database'
 import { requireRole } from '../../utils/session'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isValidUuid, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -12,7 +11,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Mengambil detail satu pertanyaan The Vault berdasarkan ID unik (UUID).
  * - Otorisasi ketat: Hanya user yang sudah login dengan role 'admin' atau 'servant'.
  * - Memvalidasi format UUID ID parameter.
- * - Mengembalikan response konsisten beserta data user yang menjawab (jika ada).
+ * - Mengembalikan response konsisten tanpa membocorkan error database internal.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi: Pastikan user terautentikasi dengan role admin atau servant
@@ -21,7 +20,7 @@ export default defineEventHandler(async (event) => {
   // 2. Ambil dan validasi router parameter 'id'
   const id = getRouterParam(event, 'id')
 
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -65,15 +64,6 @@ export default defineEventHandler(async (event) => {
       data: question
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [GET /api/vault/:id Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve the question.'
-    })
+    handleServerError(error, 'Failed to retrieve the question.')
   }
 })

@@ -130,7 +130,7 @@
 
         <!-- Active Featured Photo Reel Showcase -->
         <div 
-          class="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden border-2 border-zinc-800 bg-zinc-900 shadow-pixel-purple"
+          class="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden border-2 border-zinc-800 bg-zinc-950 shadow-pixel-purple"
           @mouseenter="pauseAutoplay"
           @mouseleave="resumeAutoplay"
         >
@@ -145,31 +145,51 @@
                 : 'opacity-0 scale-105 pointer-events-none z-0'
             ]"
           >
+            <!-- Smooth Shimmer / Blur Placeholder when image hasn't loaded -->
+            <div
+              v-if="!isImageLoaded(photo.id)"
+              class="absolute inset-0 bg-zinc-900 animate-pulse flex items-center justify-center z-0"
+            >
+              <div class="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-950/80 flex items-center justify-center text-zinc-600">
+                <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Optimized Image with Blur-Up Transition, Modern Formats & SrcSet -->
             <img
-              :src="photo.url"
-              :alt="photo.caption"
-              class="w-full h-full object-cover"
-              loading="lazy"
+              :src="getOptimizedImageUrl(photo.url, { width: 1440, quality: 80, format: 'auto' })"
+              :srcset="getImageSrcSet(photo.url, [640, 1024, 1440, 1920]) || undefined"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1440px"
+              :alt="photo.caption || photo.title"
+              width="1440"
+              height="810"
+              :loading="index === 0 ? 'eager' : 'lazy'"
+              decoding="async"
+              class="img-blur-up w-full h-full object-cover select-none relative z-1"
+              :class="isImageLoaded(photo.id) ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-105'"
+              @load="markImageLoaded(photo.id)"
             />
             
             <!-- Vignette & Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent z-2 pointer-events-none" />
 
             <!-- Caption Card Overlaid -->
-            <div class="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div class="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 z-3">
               <div class="space-y-1.5 max-w-lg">
                 <UiBadge :variant="photo.tagVariant" size="sm">
                   {{ photo.tag }}
                 </UiBadge>
-                <h3 class="text-xl sm:text-2xl font-bold text-white font-sans">
+                <h3 class="text-xl sm:text-2xl font-bold text-white font-sans drop-shadow-md">
                   {{ photo.title }}
                 </h3>
-                <p class="text-xs sm:text-sm text-zinc-300">
+                <p class="text-xs sm:text-sm text-zinc-300 drop-shadow">
                   {{ photo.caption }}
                 </p>
               </div>
 
-              <div class="font-pixel text-xs text-brand-yellow bg-black/60 px-3 py-1.5 border border-zinc-700 rounded backdrop-blur-sm self-start sm:self-auto">
+              <div class="font-pixel text-xs text-brand-yellow bg-black/70 px-3 py-1.5 border border-zinc-700/80 rounded backdrop-blur-md self-start sm:self-auto shadow-lg">
                 {{ String(index + 1).padStart(2, '0') }} / {{ String(photos.length).padStart(2, '0') }}
               </div>
             </div>
@@ -181,20 +201,34 @@
           <button
             v-for="(photo, idx) in photos"
             :key="`thumb-${photo.id}`"
+            type="button"
             :class="[
-              'relative shrink-0 w-28 sm:w-36 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300',
+              'relative shrink-0 w-28 sm:w-36 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 aspect-[16/10] bg-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none',
               idx === currentPhotoIndex
-                ? 'border-brand-yellow scale-105 shadow-pixel-yellow opacity-100'
+                ? 'border-brand-yellow scale-105 shadow-pixel-yellow opacity-100 ring-2 ring-brand-yellow/30'
                 : 'border-zinc-800 opacity-60 hover:opacity-100 hover:border-zinc-600'
             ]"
-            :aria-label="`Jump to photo ${idx + 1}`"
+            :aria-label="`Jump to photo ${idx + 1}: ${photo.title}`"
+            :aria-current="idx === currentPhotoIndex ? 'true' : undefined"
             @click="currentPhotoIndex = idx"
           >
+            <!-- Thumbnail Shimmer Placeholder -->
+            <div
+              v-if="!isThumbLoaded(photo.id)"
+              class="absolute inset-0 bg-zinc-900 animate-pulse"
+            />
+
+            <!-- Compressed Lightweight Thumbnail (drops payload by ~95%) -->
             <img
-              :src="photo.url"
+              :src="getOptimizedImageUrl(photo.url, { width: 280, height: 160, quality: 75, format: 'auto' })"
               :alt="photo.title"
-              class="w-full h-full object-cover"
+              width="280"
+              height="160"
               loading="lazy"
+              decoding="async"
+              class="img-blur-up w-full h-full object-cover select-none relative z-1"
+              :class="isThumbLoaded(photo.id) ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-sm scale-105'"
+              @load="markThumbLoaded(photo.id)"
             />
           </button>
         </div>
@@ -392,16 +426,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 // Terapkan layout default untuk halaman publik
 definePageMeta({
   layout: 'default'
 })
 
-// Data Dummy 6+ Foto untuk Section Photo Reel (High-res Unsplash & Picsum)
+// SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'Home — Equipping The Next Generation',
+  ogTitle: 'Arrow Gen — Equipping The Next Generation',
+  description: 'Welcome to Arrow Gen, a vibrant youth & young adult church community passionate about authentic worship, discipleship, and transformative fellowship in Jesus Christ.',
+  ogDescription: 'Arrow Gen is an authentic youth ministry community focused on passionate worship, small groups, and raising leaders for Christ.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Arrow Gen — Equipping The Next Generation',
+  twitterDescription: 'Join Arrow Gen youth & young adult community. Authentic faith, worship, and fellowship.',
+  twitterImage: '/logo-arrow.png'
+})
+
+useHead({
+  htmlAttrs: { lang: 'en' }
+})
+
+// Data Curated Default untuk Section Photo Reel
 interface ReelPhoto {
-  id: number
+  id: string | number
   title: string
   caption: string
   tag: string
@@ -409,67 +461,124 @@ interface ReelPhoto {
   url: string
 }
 
-const photos: ReelPhoto[] = [
+interface PhotoApiResponse {
+  success: boolean
+  total: number
+  data: Array<{
+    id: string
+    url: string
+    alt: string
+    order: number
+    isActive: boolean
+  }>
+}
+
+const defaultPhotos: ReelPhoto[] = [
   {
-    id: 1,
+    id: 'default-1',
     title: 'Night of Worship & Encounter',
     caption: 'Passionate worship lifting the name of Jesus with heart and soul.',
     tag: 'WORSHIP',
     tagVariant: 'primary',
-    url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1440&q=80'
   },
   {
-    id: 2,
+    id: 'default-2',
     title: 'Authentic Small Group Circles',
     caption: 'Life is better together. Doing life, scriptures, and coffee as one family.',
     tag: 'FELLOWSHIP',
     tagVariant: 'accent',
-    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1440&q=80'
   },
   {
-    id: 3,
+    id: 'default-3',
     title: 'Creative Media & Tech Team',
     caption: 'Using sound, lighting, code, and visuals for kingdom excellence.',
     tag: 'CREATIVE',
     tagVariant: 'pixel',
-    url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1440&q=80'
   },
   {
-    id: 4,
+    id: 'default-4',
     title: 'Deep Prayer & Intercession',
     caption: 'Seeking God’s face for our generation, families, and city.',
     tag: 'PRAYER',
     tagVariant: 'secondary',
-    url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1440&q=80'
   },
   {
-    id: 5,
+    id: 'default-5',
     title: 'Arrow Leadership Camp',
     caption: 'Equipping disciples and future leaders with clarity and character.',
     tag: 'DISCIPLESHIP',
     tagVariant: 'primary',
-    url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1440&q=80'
   },
   {
-    id: 6,
+    id: 'default-6',
     title: 'City Outreach & Blessing',
     caption: 'Being the hands and feet of Christ to those in need across the city.',
     tag: 'OUTREACH',
     tagVariant: 'accent',
-    url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80'
+    url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1440&q=80'
   }
 ]
+
+// Fetch live active photos from ministry API (with fallback to curated defaults)
+const { data: apiPhotosResponse } = await useFetch<PhotoApiResponse>('/api/photos', {
+  lazy: true
+})
+
+const photos = computed<ReelPhoto[]>(() => {
+  const activePhotos = apiPhotosResponse.value?.data
+  if (activePhotos && activePhotos.length > 0) {
+    const tags: Array<{ tag: string; variant: 'primary' | 'secondary' | 'accent' | 'pixel' }> = [
+      { tag: 'WORSHIP', variant: 'primary' },
+      { tag: 'FELLOWSHIP', variant: 'accent' },
+      { tag: 'CREATIVE', variant: 'pixel' },
+      { tag: 'OUTREACH', variant: 'secondary' }
+    ]
+    return activePhotos.map((item, index) => {
+      const tagInfo = tags[index % tags.length]
+      return {
+        id: item.id,
+        title: item.alt || `Ministry Moment #${item.order || index + 1}`,
+        caption: item.alt || 'Arrow Gen youth community gathering & fellowship.',
+        tag: tagInfo.tag,
+        tagVariant: tagInfo.variant,
+        url: item.url
+      }
+    })
+  }
+  return defaultPhotos
+})
 
 // Photo Reel State & Smooth Carousel Logic
 const currentPhotoIndex = ref(0)
 let autoplayTimer: NodeJS.Timeout | null = null
 
+// Blur-Up Loading State Tracking
+const loadedImages = ref<Record<string | number, boolean>>({})
+const loadedThumbs = ref<Record<string | number, boolean>>({})
+
+const isImageLoaded = (id: string | number) => Boolean(loadedImages.value[id])
+const markImageLoaded = (id: string | number) => {
+  loadedImages.value[id] = true
+}
+
+const isThumbLoaded = (id: string | number) => Boolean(loadedThumbs.value[id])
+const markThumbLoaded = (id: string | number) => {
+  loadedThumbs.value[id] = true
+}
+
 const nextPhoto = () => {
-  currentPhotoIndex.value = (currentPhotoIndex.value + 1) % photos.length
+  if (photos.value.length === 0) return
+  currentPhotoIndex.value = (currentPhotoIndex.value + 1) % photos.value.length
 }
 
 const prevPhoto = () => {
-  currentPhotoIndex.value = (currentPhotoIndex.value - 1 + photos.length) % photos.length
+  if (photos.value.length === 0) return
+  currentPhotoIndex.value = (currentPhotoIndex.value - 1 + photos.value.length) % photos.value.length
 }
 
 const startAutoplay = () => {

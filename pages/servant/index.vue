@@ -54,16 +54,77 @@
 
     <!-- 2. Loading State Skeletons -->
     <div v-if="pending && !dashboardData" class="space-y-8">
+      <!-- KPI Skeletons -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <UiSkeleton v-for="i in 4" :key="i" class="h-28 rounded-xl" />
+        <UiCard v-for="i in 4" :key="i" variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-4">
+          <div class="flex items-center justify-between">
+            <UiSkeleton class="h-3.5 w-24 rounded" />
+            <UiSkeleton class="h-4 w-16 rounded-full" />
+          </div>
+          <div class="flex items-baseline justify-between">
+            <UiSkeleton class="h-8 w-14 rounded" />
+            <UiSkeleton class="h-3 w-16 rounded" />
+          </div>
+          <div class="pt-2 border-t border-zinc-900 flex justify-between">
+            <UiSkeleton class="h-2.5 w-32 rounded" />
+            <UiSkeleton class="h-2.5 w-4 rounded" />
+          </div>
+        </UiCard>
       </div>
+
+      <!-- Panels Skeletons -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UiSkeleton class="h-80 rounded-xl" />
-        <UiSkeleton class="h-80 rounded-xl" />
+        <UiCard v-for="p in 2" :key="p" variant="default" padding="lg" class="border-zinc-800 bg-zinc-950/80 space-y-4">
+          <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+            <div class="space-y-1.5">
+              <UiSkeleton class="h-4 w-36 rounded" />
+              <UiSkeleton class="h-3 w-48 rounded" />
+            </div>
+            <UiSkeleton class="h-3.5 w-24 rounded" />
+          </div>
+          <div class="space-y-3">
+            <div v-for="item in 3" :key="item" class="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 space-y-2">
+              <div class="flex justify-between">
+                <UiSkeleton class="h-3.5 w-24 rounded" />
+                <UiSkeleton class="h-3 w-16 rounded" />
+              </div>
+              <UiSkeleton class="h-3 w-full rounded" />
+              <UiSkeleton class="h-3 w-2/3 rounded" />
+            </div>
+          </div>
+        </UiCard>
       </div>
     </div>
 
-    <!-- 3. Dashboard Real Content -->
+    <!-- 3. Error State -->
+    <UiCard
+      v-else-if="error && !dashboardData"
+      variant="default"
+      padding="lg"
+      class="text-center py-16 border-rose-900/50 bg-rose-950/20"
+    >
+      <div class="w-12 h-12 rounded-2xl bg-rose-950/60 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400 mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-rose-200">Unable to Load Servant Portal</h3>
+      <p class="text-xs text-rose-300/80 mt-1 max-w-sm mx-auto">
+        {{ error.message || 'We could not reach the server to fetch live ministry records. Please check your network connection.' }}
+      </p>
+      <div class="mt-5 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs"
+          @click="refreshData"
+        >
+          Retry Connection
+        </UiButton>
+      </div>
+    </UiCard>
+
+    <!-- 4. Dashboard Real Content -->
     <div v-else class="space-y-8">
       <!-- Quick Status Cards Grid (Live Data) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -221,9 +282,22 @@
             <!-- Empty State -->
             <div
               v-if="activeSchedulesList.length === 0"
-              class="py-10 text-center border border-dashed border-zinc-800/80 rounded-xl"
+              class="py-10 text-center border border-dashed border-zinc-800/80 rounded-xl bg-zinc-950/40 space-y-2"
             >
-              <p class="text-xs text-zinc-500">No active gathering schedules currently scheduled.</p>
+              <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-400 font-medium">No Active Ministry Schedules</p>
+              <p class="text-[11px] text-zinc-500 max-w-xs mx-auto">There are no upcoming gatherings on the active ministry calendar.</p>
+              <div class="pt-1">
+                <NuxtLink to="/servant/schedules">
+                  <UiButton variant="pixel" size="sm" class="text-xs">
+                    + Add Schedule
+                  </UiButton>
+                </NuxtLink>
+              </div>
             </div>
 
             <!-- Schedules Items -->
@@ -287,9 +361,22 @@
             <!-- Empty State -->
             <div
               v-if="recentVaultQuestions.length === 0"
-              class="py-10 text-center border border-dashed border-zinc-800/80 rounded-xl"
+              class="py-10 text-center border border-dashed border-zinc-800/80 rounded-xl bg-zinc-950/40 space-y-2"
             >
-              <p class="text-xs text-zinc-500">No prayer inquiries in The Vault right now.</p>
+              <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <p class="text-xs text-zinc-400 font-medium">No Prayer Inquiries Right Now</p>
+              <p class="text-[11px] text-zinc-500 max-w-xs mx-auto">Anonymous youth inquiries submitted for prayer will show up here.</p>
+              <div class="pt-1">
+                <NuxtLink to="/vault" target="_blank">
+                  <UiButton variant="ghost" size="sm" class="text-xs text-brand-yellow">
+                    Open Public Vault &rarr;
+                  </UiButton>
+                </NuxtLink>
+              </div>
             </div>
 
             <!-- Questions List -->
@@ -353,8 +440,21 @@
           </NuxtLink>
         </div>
 
-        <div v-if="recentCrewApplicants.length === 0" class="py-8 text-center text-xs text-zinc-500">
-          No new crew registrations awaiting review.
+        <div v-if="recentCrewApplicants.length === 0" class="py-8 text-center border border-dashed border-zinc-800/80 rounded-xl bg-zinc-950/40 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <p class="text-xs text-zinc-400 font-medium">No New Crew Registrations</p>
+          <p class="text-[11px] text-zinc-500 max-w-xs mx-auto">New servant applicants will be listed here for onboarding and review.</p>
+          <div class="pt-1">
+            <NuxtLink to="/join-the-crew" target="_blank">
+              <UiButton variant="ghost" size="sm" class="text-xs text-purple-400">
+                Open Join Form &rarr;
+              </UiButton>
+            </NuxtLink>
+          </div>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -476,7 +576,7 @@ interface SchedulesApiResponse {
 }
 
 // 3. Fetch Real Live Data from APIs
-const { data: dashboardData, pending, refresh } = await useAsyncData('servant-live-dashboard', async () => {
+const { data: dashboardData, pending, error, refresh } = await useAsyncData('servant-live-dashboard', async () => {
   const reqHeaders = useRequestHeaders(['cookie']) as Record<string, string>
 
   const [vaultRes, crewRes, schedulesRes] = await Promise.all([
@@ -484,6 +584,10 @@ const { data: dashboardData, pending, refresh } = await useAsyncData('servant-li
     $fetch<CrewApiResponse>('/api/crew', { headers: reqHeaders }).catch(() => null),
     $fetch<SchedulesApiResponse>('/api/schedules?all=true', { headers: reqHeaders }).catch(() => null)
   ])
+
+  if (!vaultRes && !crewRes && !schedulesRes) {
+    throw new Error('Unable to connect to internal services. Please verify your connection or re-login.')
+  }
 
   return {
     vault: vaultRes,

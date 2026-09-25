@@ -88,13 +88,15 @@
     <!-- 3. Filter & Search Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
       <!-- Status Filter Tabs -->
-      <div class="flex items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80">
+      <div class="flex items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80" role="tablist" aria-label="Photo status filters">
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
           type="button"
+          role="tab"
+          :aria-selected="activeFilter === tab.value"
           :class="[
-            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
             activeFilter === tab.value
               ? 'bg-brand-purple text-white shadow-sm font-semibold'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -136,8 +138,59 @@
 
     <!-- 4. Loading State -->
     <div v-if="pending && !photosList.length" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <UiSkeleton v-for="i in 8" :key="i" class="h-64 rounded-xl" />
+      <div
+        v-for="i in 8"
+        :key="i"
+        class="border border-zinc-800/80 rounded-xl bg-zinc-950/80 overflow-hidden flex flex-col justify-between"
+      >
+        <UiSkeleton class="aspect-video w-full rounded-none" />
+        <div class="p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <UiSkeleton class="h-4 w-16 rounded" />
+            <UiSkeleton class="h-4 w-12 rounded" />
+          </div>
+          <UiSkeleton class="h-3 w-3/4 rounded" />
+          <div class="pt-2 border-t border-zinc-900 flex items-center justify-between">
+            <div class="flex gap-1">
+              <UiSkeleton class="h-6 w-6 rounded" />
+              <UiSkeleton class="h-6 w-6 rounded" />
+            </div>
+            <div class="flex gap-1.5">
+              <UiSkeleton class="h-6 w-12 rounded" />
+              <UiSkeleton class="h-6 w-12 rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- 5. Error State -->
+    <UiCard
+      v-else-if="error"
+      variant="default"
+      padding="lg"
+      class="text-center py-14 border-rose-900/50 bg-rose-950/20"
+    >
+      <div class="w-12 h-12 rounded-2xl bg-rose-950/60 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400 mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-rose-200">Failed to Load Photo Reel</h3>
+      <p class="text-xs text-rose-300/80 mt-1 max-w-sm mx-auto">
+        {{ error.message || 'Could not fetch photo gallery records from server. Please check connection and try again.' }}
+      </p>
+      <div class="mt-5 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs"
+          @click="refreshData"
+        >
+          Try Again
+        </UiButton>
+      </div>
+    </UiCard>
 
     <!-- 5. Empty State -->
     <UiCard
@@ -187,11 +240,26 @@
       >
         <!-- Thumbnail Preview Area with Overlay Badges -->
         <div class="relative aspect-video w-full bg-zinc-900 overflow-hidden border-b border-zinc-900">
+          <!-- Shimmer Placeholder before image loads -->
+          <div
+            v-if="!isGridImageLoaded(item.id) && !brokenImages.has(item.id)"
+            class="absolute inset-0 bg-zinc-900 animate-pulse flex items-center justify-center z-0"
+          >
+            <svg class="w-5 h-5 text-zinc-700 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+
           <img
-            :src="item.url"
+            :src="getOptimizedImageUrl(item.url, { width: 640, height: 360, quality: 75, format: 'auto' })"
             :alt="item.alt || 'Photo Reel Image'"
+            width="480"
+            height="270"
             loading="lazy"
-            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            decoding="async"
+            class="img-blur-up w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 select-none relative z-1"
+            :class="isGridImageLoaded(item.id) ? 'opacity-100 blur-0' : 'opacity-0 blur-sm'"
+            @load="markGridImageLoaded(item.id)"
             @error="onImageLoadError(item.id)"
           />
 
@@ -221,12 +289,13 @@
           </div>
 
           <!-- Quick Move Up/Down Buttons on Thumbnail -->
-          <div class="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 backdrop-blur-md rounded-md p-1 border border-zinc-800">
+          <div class="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-black/80 backdrop-blur-md rounded-md p-1 border border-zinc-800">
             <button
               type="button"
               :disabled="index === 0 || isReordering"
-              class="p-1 rounded text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              class="p-1 rounded text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
               title="Move photo earlier in order"
+              aria-label="Move photo earlier in order"
               @click="movePhoto(index, -1)"
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,8 +305,9 @@
             <button
               type="button"
               :disabled="index === filteredPhotos.length - 1 || isReordering"
-              class="p-1 rounded text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              class="p-1 rounded text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
               title="Move photo later in order"
+              aria-label="Move photo later in order"
               @click="movePhoto(index, 1)"
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,8 +359,9 @@
               <!-- Delete Button -->
               <button
                 type="button"
-                class="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+                class="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
                 title="Delete Photo"
+                aria-label="Delete Photo"
                 @click="openDeleteDialog(item)"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,7 +393,8 @@
           </div>
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close dialog"
             @click="closeModal"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,6 +431,10 @@
               <img
                 :src="form.url"
                 :alt="form.alt || 'Live preview'"
+                width="480"
+                height="270"
+                loading="eager"
+                decoding="async"
                 class="w-full h-full object-cover"
                 @load="previewError = false"
                 @error="previewError = true"
@@ -481,9 +557,13 @@
         <!-- Photo Snippet Preview -->
         <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
           <img
-            :src="deletingItem.url"
+            :src="getOptimizedImageUrl(deletingItem.url, { width: 120, height: 120, quality: 75, format: 'auto' })"
             :alt="deletingItem.alt"
-            class="w-14 h-14 rounded-lg object-cover bg-zinc-950 border border-zinc-800 shrink-0"
+            width="56"
+            height="56"
+            loading="lazy"
+            decoding="async"
+            class="w-14 h-14 rounded-lg object-cover bg-zinc-950 border border-zinc-800 shrink-0 select-none"
           />
           <div class="min-w-0">
             <p class="text-xs font-semibold text-zinc-200 truncate">
@@ -537,7 +617,7 @@ useHead({
 })
 
 // 2. Types & Interfaces
-export interface PhotoItem {
+interface PhotoItem {
   id: string
   url: string
   alt: string
@@ -546,7 +626,7 @@ export interface PhotoItem {
   createdAt: string
 }
 
-export interface PhotosApiResponse {
+interface PhotosApiResponse {
   success: boolean
   message: string
   total: number
@@ -565,6 +645,12 @@ const isReordering = ref(false)
 const deletingItem = ref<PhotoItem | null>(null)
 const isDeleting = ref(false)
 const brokenImages = ref<Set<string>>(new Set())
+const loadedGridImages = ref<Record<string, boolean>>({})
+
+const isGridImageLoaded = (id: string) => Boolean(loadedGridImages.value[id])
+const markGridImageLoaded = (id: string) => {
+  loadedGridImages.value[id] = true
+}
 
 const form = ref({
   url: '',
@@ -574,7 +660,7 @@ const form = ref({
 })
 
 // 4. Fetch All Photos from API
-const { data: apiResponse, pending, refresh } = await useFetch<PhotosApiResponse>('/api/photos?all=true', {
+const { data: apiResponse, pending, error, refresh } = await useFetch<PhotosApiResponse>('/api/photos?all=true', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
 })
 

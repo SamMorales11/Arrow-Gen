@@ -1,7 +1,8 @@
-import { defineEventHandler, getQuery, createError } from 'h3'
-import { eq, desc, and } from 'drizzle-orm'
+import { defineEventHandler, getQuery } from 'h3'
+import { eq, desc } from 'drizzle-orm'
 import { db, users } from '../../database'
 import { requireRole } from '../../utils/session'
+import { handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -10,7 +11,7 @@ import { requireRole } from '../../utils/session'
  * Mengambil daftar user (khususnya Pelayan Tuhan / role 'servant').
  * - Akses eksklusif: Hanya untuk role 'admin'.
  * - Query param ?role=servant (default 'servant') atau 'all'.
- * - Mengecualikan field sensitif (password_hash).
+ * - Tidak mengekspos field sensitif (password, password_hash, token, secret).
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin
@@ -53,15 +54,6 @@ export default defineEventHandler(async (event) => {
       data: userList
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [GET /api/users Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve user list.'
-    })
+    handleServerError(error, 'Failed to retrieve user list.')
   }
 })

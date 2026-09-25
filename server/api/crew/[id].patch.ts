@@ -2,10 +2,9 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, crewApplications } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUuid, handleServerError } from '../../utils/sanitize'
 
 export type CrewApplicationStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface PatchCrewBody {
   status?: unknown
@@ -18,7 +17,7 @@ export interface PatchCrewBody {
  * Mengubah status pendaftar Join The Crew (pending, reviewed, accepted, rejected).
  * - Otorisasi ketat: Hanya user yang sudah login dengan role 'admin' atau 'servant'.
  * - Memperbarui status dan timestamp updatedAt.
- * - Mengembalikan response konsisten beserta record terupdate.
+ * - Mengembalikan response konsisten tanpa membocorkan error database.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin dan servant
@@ -26,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validasi ID parameter (UUID)
   const id = getRouterParam(event, 'id')
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -81,11 +80,6 @@ export default defineEventHandler(async (event) => {
       data: updated
     }
   } catch (error: unknown) {
-    console.error('❌ [PATCH /api/crew/:id Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to update crew applicant status in database.'
-    })
+    handleServerError(error, 'Failed to update crew applicant status.')
   }
 })

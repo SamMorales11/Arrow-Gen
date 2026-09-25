@@ -44,23 +44,24 @@
           <div class="space-y-2">
             <label class="text-xs sm:text-sm font-medium text-zinc-200 select-none flex items-center justify-between">
               <span>What would you like to talk about?</span>
-              <span class="text-[11px] text-zinc-500 font-mono">Select a topic</span>
+              <span class="text-[11px] text-zinc-400 font-mono">Select a topic</span>
             </label>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Conversation Topics">
               <button
                 v-for="topic in topics"
                 :key="topic.id"
                 type="button"
+                :aria-pressed="selectedTopic === topic.id"
                 :class="[
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border select-none flex items-center gap-1.5',
+                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border select-none flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
                   selectedTopic === topic.id
                     ? 'bg-brand-purple/20 border-brand-purple text-purple-200 font-semibold'
-                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:text-zinc-100 hover:border-zinc-700'
                 ]"
                 @click="selectedTopic = selectedTopic === topic.id ? '' : topic.id"
               >
-                <span>{{ topic.icon }}</span>
+                <span aria-hidden="true">{{ topic.icon }}</span>
                 <span>{{ topic.label }}</span>
               </button>
             </div>

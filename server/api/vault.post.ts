@@ -1,12 +1,16 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, vaultQuestions } from '../database'
+import { checkRateLimit } from '../utils/rate-limit'
+import { stripHtml, sanitizeString, handleServerError } from '../utils/sanitize'
 
 /**
  * ============================================================================
  * POST /api/vault
  * ============================================================================
  * Endpoint publik untuk menerima pertanyaan anonim (The Vault).
- * Menyimpan data ke tabel `vault_questions` dengan status "pending".
+ * - Dilindungi Rate Limiting (Maksimum 5 submission per 10 menit per IP).
+ * - Sanitasi input ketat (Strips HTML tags & scripts untuk mencegah Stored XSS).
+ * - Menangani error secara aman tanpa membocorkan detail database ke response.
  */
 
 interface VaultRequestBody {
@@ -15,11 +19,28 @@ interface VaultRequestBody {
   context?: unknown
 }
 
+const ALLOWED_CATEGORIES = [
+  'Faith & Doubts',
+  'Relationships & Dating',
+  'Mental Health & Anxiety',
+  'Life Purpose & Calling',
+  'Church & Community',
+  'Bible Questions',
+  'Other / General'
+]
+
 export default defineEventHandler(async (event) => {
-  // 1. Parse request body
+  // 1. Rate Limiting: Maksimal 5 pengiriman pertanyaan per 10 menit per IP address
+  checkRateLimit(event, {
+    keyPrefix: 'vault-submit',
+    maxRequests: 5,
+    windowSeconds: 600
+  })
+
+  // 2. Parse request body
   const body = (await readBody<VaultRequestBody>(event)) || {}
 
-  // 2. Validasi field 'question'
+  // 3. Validasi & sanitasi field 'question'
   if (typeof body.question !== 'string' || !body.question.trim()) {
     throw createError({
       statusCode: 400,
@@ -28,38 +49,42 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const trimmedQuestion = body.question.trim()
+  // Bersihkan tag HTML untuk mencegah XSS
+  const cleanedQuestion = stripHtml(body.question).trim()
 
-  if (trimmedQuestion.length < 5) {
+  if (cleanedQuestion.length < 10) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
-      message: 'Question is too short (minimum 5 characters required).'
+      message: 'Question is too short (minimum 10 characters required).'
     })
   }
 
-  if (trimmedQuestion.length > 2500) {
+  if (cleanedQuestion.length > 2000) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
-      message: 'Question exceeds maximum allowed length of 2500 characters.'
+      message: 'Question exceeds maximum allowed length of 2000 characters.'
     })
   }
 
-  // 3. Validasi & sanitasi field 'category' (opsional)
+  // 4. Validasi & sanitasi field 'category' (opsional)
   let cleanCategory: string | null = null
   if (typeof body.category === 'string' && body.category.trim()) {
-    cleanCategory = body.category.trim().slice(0, 100)
+    const rawCategory = sanitizeString(body.category, { maxLen: 60 })
+    cleanCategory = ALLOWED_CATEGORIES.includes(rawCategory) ? rawCategory : 'Other / General'
   }
 
-  // 4. Handle context tambahan (opsional)
-  let finalQuestion = trimmedQuestion
+  // 5. Validasi & sanitasi context tambahan (opsional)
+  let finalQuestion = cleanedQuestion
   if (typeof body.context === 'string' && body.context.trim()) {
-    const trimmedContext = body.context.trim()
-    finalQuestion = `${trimmedQuestion}\n\n[Additional Context]:\n${trimmedContext}`
+    const cleanContext = sanitizeString(body.context, { maxLen: 1000 })
+    if (cleanContext) {
+      finalQuestion = `${cleanedQuestion}\n\n[Additional Context]:\n${cleanContext}`
+    }
   }
 
-  // 5. Simpan ke database Neon melalui Drizzle
+  // 6. Simpan ke database Neon melalui Drizzle
   try {
     const [newQuestion] = await db
       .insert(vaultQuestions)
@@ -82,13 +107,7 @@ export default defineEventHandler(async (event) => {
       data: newQuestion
     }
   } catch (error: unknown) {
-    // Log error internal di console server (tidak diekspos ke client)
-    console.error('❌ [API /api/vault Error]:', error)
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to deposit question into The Vault. Please try again later.'
-    })
+    // Tangani error secara aman: tidak membocorkan query SQL atau credential Neon
+    handleServerError(error, 'Failed to deposit question into The Vault. Please try again later.')
   }
 })

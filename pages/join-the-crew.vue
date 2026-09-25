@@ -112,13 +112,27 @@
         <!-- Global Error Alert -->
         <div
           v-if="submissionState === 'error'"
-          class="p-4 rounded-lg bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2.5"
+          class="p-4 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in"
           role="alert"
         >
-          <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>{{ errorMessage || 'Please review the highlighted fields below and try again.' }}</span>
+          <div class="flex items-start sm:items-center gap-2.5">
+            <svg class="w-5 h-5 shrink-0 text-rose-400 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p class="font-semibold text-rose-100">Application Submission Incomplete</p>
+              <p class="text-rose-300/90 text-[11px] mt-0.5">{{ errorMessage || 'Please review the highlighted fields below, select at least one interest, and try again.' }}</p>
+            </div>
+          </div>
+          <UiButton
+            type="button"
+            variant="outline"
+            size="sm"
+            class="text-[11px] border-rose-700/60 hover:bg-rose-900/40 text-rose-200 shrink-0 self-start sm:self-auto"
+            @click="handleSubmit"
+          >
+            Retry Submission
+          </UiButton>
         </div>
 
         <form class="space-y-6" @submit.prevent="handleSubmit">
@@ -164,19 +178,20 @@
               <span>
                 Areas of Interest <span class="text-brand-yellow">*</span>
               </span>
-              <span class="text-xs text-zinc-500 font-mono">Select one or more</span>
+              <span class="text-xs text-zinc-400 font-mono">Select one or more</span>
             </label>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" role="group" aria-label="Ministry Interest Areas">
               <button
                 v-for="area in interestAreas"
                 :key="area.id"
                 type="button"
+                :aria-pressed="form.interests.includes(area.id)"
                 :class="[
-                  'p-3.5 rounded-lg border text-left transition-all flex items-start gap-3 select-none',
+                  'p-3.5 rounded-lg border text-left transition-all flex items-start gap-3 select-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none',
                   form.interests.includes(area.id)
                     ? 'bg-brand-purple/20 border-brand-purple text-purple-200 shadow-sm'
-                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
                 ]"
                 @click="toggleInterest(area.id)"
               >
@@ -196,7 +211,7 @@
 
                 <div class="space-y-0.5">
                   <p class="text-sm font-medium text-zinc-100">{{ area.label }}</p>
-                  <p class="text-[11px] text-zinc-500">{{ area.desc }}</p>
+                  <p class="text-[11px] text-zinc-400">{{ area.desc }}</p>
                 </div>
               </button>
             </div>
@@ -231,7 +246,7 @@
 
           <!-- Action Buttons -->
           <div class="pt-4 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p class="text-[11px] text-zinc-500 font-mono">
+            <p class="text-[11px] text-zinc-400 font-mono">
               STATUS: {{ submissionState.toUpperCase() }}
             </p>
 
@@ -306,12 +321,22 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'Join The Crew — Creative, Production & Ministry Volunteering',
+  ogTitle: 'Join The Crew — Serve with Passion at Arrow Gen',
+  description: 'Step into purpose by joining the Arrow Gen creative, worship, audio-visual, tech, and hospitality crew. Discover your gifts and serve the next generation.',
+  ogDescription: 'Ready to serve? Join our dynamic creative, media, music, tech, and hospitality ministry teams at Arrow Gen.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Join The Crew — Arrow Gen Ministry Volunteering',
+  twitterDescription: 'Discover your gifts and serve the next generation in worship, media, sound, tech, and hospitality.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'Join The Crew | Arrow Gen Creative & Ministry',
-  meta: [
-    { name: 'description', content: 'Apply to join the Arrow Gen creative, worship, production, tech, and hospitality crew.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 
 // Form Data & State

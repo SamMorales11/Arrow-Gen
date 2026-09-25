@@ -86,13 +86,15 @@
     <!-- 3. Filter & Search Toolbar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800">
       <!-- Status Tabs Filter -->
-      <div class="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80">
+      <div class="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-950 rounded-lg border border-zinc-800/80" role="tablist" aria-label="Candidate status filters">
         <button
           v-for="tab in statusTabs"
           :key="tab.value"
           type="button"
+          role="tab"
+          :aria-selected="activeStatus === tab.value"
           :class="[
-            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5',
+            'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
             activeStatus === tab.value
               ? 'bg-brand-purple text-white shadow-sm font-semibold'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
@@ -132,36 +134,101 @@
       </div>
     </div>
 
-    <!-- 4. Loading State -->
-    <div v-if="pending && !applicantList.length" class="space-y-4">
-      <UiSkeleton v-for="i in 3" :key="i" class="h-44 rounded-xl" />
+    <!-- 4. Loading State (Structured Applicant Skeletons) -->
+    <div v-if="pending && !applicantList.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <UiCard v-for="i in 4" :key="i" variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-3">
+        <div class="flex items-center justify-between pb-3 border-b border-zinc-900">
+          <div class="flex items-center gap-3">
+            <UiSkeleton width="40px" height="40px" rounded="full" />
+            <div class="space-y-1">
+              <UiSkeleton width="120px" height="18px" rounded="sm" />
+              <UiSkeleton width="80px" height="12px" rounded="sm" />
+            </div>
+          </div>
+          <UiSkeleton width="70px" height="22px" rounded="full" />
+        </div>
+        <UiSkeleton width="90%" height="16px" rounded="sm" />
+        <div class="flex gap-2">
+          <UiSkeleton width="60px" height="20px" rounded="sm" />
+          <UiSkeleton width="70px" height="20px" rounded="sm" />
+        </div>
+        <div class="pt-3 border-t border-zinc-900 flex justify-end">
+          <UiSkeleton width="90px" height="26px" rounded="md" />
+        </div>
+      </UiCard>
     </div>
 
-    <!-- 5. Empty State -->
+    <!-- 5. Error State -->
+    <UiCard
+      v-else-if="error"
+      variant="default"
+      padding="lg"
+      class="text-center py-14 border-rose-900/60 bg-rose-950/20 space-y-4"
+    >
+      <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-sm font-semibold text-zinc-100">Unable to Retrieve Crew Applications</h3>
+        <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+          {{ fetchErrorMessage }}
+        </p>
+      </div>
+      <div class="pt-2 flex justify-center gap-3">
+        <UiButton
+          variant="outline"
+          size="sm"
+          class="text-xs border-zinc-700"
+          @click="refreshData"
+        >
+          <template #leading>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </template>
+          Try Again
+        </UiButton>
+      </div>
+    </UiCard>
+
+    <!-- 6. Empty State -->
     <UiCard
       v-else-if="filteredApplicants.length === 0"
       variant="default"
       padding="lg"
-      class="text-center py-12 border-dashed border-zinc-800 bg-zinc-950/40"
+      class="text-center py-14 border-dashed border-zinc-800 bg-zinc-950/40"
     >
       <div class="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500 mb-3">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       </div>
-      <h3 class="text-sm font-semibold text-zinc-200">No applicants found</h3>
+      <h3 class="text-sm font-semibold text-zinc-200">
+        {{ searchQuery || activeStatus !== 'all' ? 'No Matching Applicants Found' : 'No Crew Applications Yet' }}
+      </h3>
       <p class="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-        {{ searchQuery ? 'No candidates match your search filters.' : 'There are currently no candidates under this status.' }}
+        {{ searchQuery || activeStatus !== 'all'
+          ? 'No candidates match your current search or status filter. Try clearing filters or use different keywords.'
+          : 'No applicants have registered for the crew yet. Share the /join-the-crew page with your community!' }}
       </p>
-      <UiButton
-        v-if="searchQuery || activeStatus !== 'all'"
-        variant="outline"
-        size="sm"
-        class="mt-4 text-xs"
-        @click="resetFilters"
-      >
-        Reset Filters
-      </UiButton>
+      <div class="mt-4 flex items-center justify-center gap-2.5">
+        <UiButton
+          v-if="searchQuery || activeStatus !== 'all'"
+          variant="outline"
+          size="sm"
+          class="text-xs"
+          @click="resetFilters"
+        >
+          Reset Filters
+        </UiButton>
+        <NuxtLink v-else to="/join-the-crew" target="_blank">
+          <UiButton variant="pixel" size="sm" class="text-xs">
+            Open Join The Crew Page &rarr;
+          </UiButton>
+        </NuxtLink>
+      </div>
     </UiCard>
 
     <!-- 6. Applicants Cards Grid / List -->
@@ -234,7 +301,7 @@
 
         <!-- Card Footer Actions -->
         <div class="flex items-center justify-between gap-2 pt-3 mt-4 border-t border-zinc-900" @click.stop>
-          <span class="text-[10px] text-zinc-600 font-mono">
+          <span class="text-[10px] text-zinc-400 font-mono">
             ID: {{ item.id.slice(0, 8) }}...
           </span>
 
@@ -303,7 +370,8 @@
           </div>
           <button
             type="button"
-            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors"
+            class="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+            aria-label="Close candidate dossier dialog"
             @click="closeDetailModal"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +443,7 @@
               <label class="text-xs font-pixel text-brand-yellow uppercase tracking-wider">
                 HEART MOTIVATION &amp; PERSONAL TESTIMONY
               </label>
-              <span class="text-[11px] text-zinc-500 font-mono">Pastoral Reference</span>
+              <span class="text-[11px] text-zinc-400 font-mono">Pastoral Reference</span>
             </div>
             <div class="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 text-sm text-zinc-200 whitespace-pre-line leading-relaxed">
               {{ activeApplicant.motivation }}
@@ -387,13 +455,14 @@
             <label class="text-xs font-pixel text-zinc-400 uppercase tracking-wider block">
               SET CANDIDATE STATUS
             </label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" role="group" aria-label="Candidate status options">
               <button
                 v-for="opt in statusOptions"
                 :key="opt.value"
                 type="button"
+                :aria-pressed="modalStatus === opt.value"
                 :class="[
-                  'py-2.5 px-3 rounded-xl text-xs font-semibold border text-center transition-all flex flex-col items-center justify-center gap-1',
+                  'py-2.5 px-3 rounded-xl text-xs font-semibold border text-center transition-all flex flex-col items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
                   modalStatus === opt.value
                     ? opt.activeClass
                     : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
@@ -453,9 +522,9 @@ useHead({
 })
 
 // 2. Types & Interfaces
-export type CrewStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected'
+type CrewStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected'
 
-export interface CrewApplicant {
+interface CrewApplicant {
   id: string
   fullName: string
   contact: string
@@ -466,7 +535,7 @@ export interface CrewApplicant {
   updatedAt: string
 }
 
-export interface CrewApiResponse {
+interface CrewApiResponse {
   success: boolean
   message: string
   total: number
@@ -490,8 +559,14 @@ const isUpdatingStatus = ref(false)
 const copied = ref(false)
 
 // 4. Fetch Data from GET /api/crew
-const { data: responseData, pending, refresh } = await useFetch<CrewApiResponse>('/api/crew', {
+const { data: responseData, pending, error, refresh } = await useFetch<CrewApiResponse>('/api/crew', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
+})
+
+const fetchErrorMessage = computed<string>(() => {
+  if (!error.value) return ''
+  const errData = error.value.data as { message?: string } | null | undefined
+  return errData?.message || error.value.message || 'We encountered a database error while retrieving applicant entries. Please retry.'
 })
 
 const refreshData = async () => {

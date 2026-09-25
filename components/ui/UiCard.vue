@@ -29,8 +29,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-export type CardVariant = 'default' | 'elevated' | 'outline' | 'pixel'
-export type CardPadding = 'none' | 'sm' | 'md' | 'lg'
+type CardVariant = 'default' | 'elevated' | 'outline' | 'pixel'
+type CardPadding = 'none' | 'sm' | 'md' | 'lg'
 
 interface Props {
   as?: string

@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, photos } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -8,7 +9,7 @@ import { requireRole } from '../../utils/session'
  * ============================================================================
  * Menambahkan foto baru ke dalam koleksi Photo Reel.
  * - Akses terbatas: hanya untuk role 'admin'.
- * - Validasi ketat pada `url`, `alt`, dan urutan `order`.
+ * - Validasi ketat pada `url` (hanya HTTP/HTTPS/path aman), `alt`, dan urutan `order`.
  */
 
 interface CreatePhotoBody {
@@ -32,20 +33,28 @@ export default defineEventHandler(async (event) => {
       message: 'Photo URL is required.'
     })
   }
+
   const cleanUrl = body.url.trim()
+  if (!isValidUrl(cleanUrl)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+      message: 'Invalid photo URL. Only HTTP, HTTPS, or relative paths are allowed.'
+    })
+  }
 
   // 3. Validasi field 'alt' (opsional)
   let cleanAlt = ''
   if (typeof body.alt === 'string') {
-    cleanAlt = body.alt.trim().slice(0, 255)
+    cleanAlt = sanitizeString(body.alt, { maxLen: 255 })
   }
 
   // 4. Validasi field 'order' (opsional, default 0)
   let cleanOrder = 0
   if (typeof body.order === 'number' && Number.isInteger(body.order)) {
-    cleanOrder = body.order
+    cleanOrder = Math.max(-1000, Math.min(1000, body.order))
   } else if (typeof body.order === 'string' && /^-?\d+$/.test(body.order.trim())) {
-    cleanOrder = parseInt(body.order.trim(), 10)
+    cleanOrder = Math.max(-1000, Math.min(1000, parseInt(body.order.trim(), 10)))
   }
 
   // 5. Validasi field 'isActive' (opsional, default true)
@@ -69,15 +78,6 @@ export default defineEventHandler(async (event) => {
       data: newPhoto
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [POST /api/photos Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to add photo. Please try again later.'
-    })
+    handleServerError(error, 'Failed to add photo. Please try again later.')
   }
 })

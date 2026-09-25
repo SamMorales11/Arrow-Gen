@@ -12,7 +12,11 @@
           <img
             src="/logo-arrow.png"
             alt="Arrow Gen Logo"
-            class="h-7 sm:h-9 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
+            width="36"
+            height="36"
+            loading="eager"
+            decoding="async"
+            class="pixel-logo h-7 sm:h-9 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
           />
           <span class="font-pixel text-brand-yellow text-xs sm:text-sm tracking-wider flex items-center gap-2 group-hover:text-amber-300 transition-colors">
             ARROW GEN
@@ -106,6 +110,8 @@
             variant="ghost"
             size="icon"
             aria-label="Toggle Mobile Navigation"
+            :aria-expanded="isMobileMenuOpen"
+            aria-controls="mobile-navigation"
             @click="isMobileMenuOpen = !isMobileMenuOpen"
           >
             <svg
@@ -147,6 +153,9 @@
       >
         <div
           v-if="isMobileMenuOpen"
+          id="mobile-navigation"
+          role="region"
+          aria-label="Mobile Navigation"
           class="xl:hidden border-b border-zinc-800 bg-zinc-950/98 px-4 pt-3 pb-6 space-y-4 shadow-2xl"
         >
           <div class="space-y-1">
@@ -260,20 +269,24 @@
         </div>
 
         <!-- Copyright & Credits -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-zinc-500">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-zinc-400">
           <div class="flex items-center gap-2.5">
             <img
               src="/logo-arrow.png"
               alt="Arrow Gen Logo"
-              class="h-4 w-auto object-contain shrink-0 opacity-80"
+              width="16"
+              height="16"
+              loading="lazy"
+              decoding="async"
+              class="pixel-logo h-4 w-auto object-contain shrink-0 opacity-80"
             />
             <span class="font-pixel text-[11px] text-zinc-300">ARROW GEN</span>
             <span class="text-zinc-700">|</span>
             <p>© 2026 Arrow Gen. All rights reserved.</p>
           </div>
 
-          <p class="text-zinc-500">
-            Powered by <span class="text-brand-purple font-medium">Nuxt 3</span> • <span class="text-brand-yellow font-medium">Tailwind CSS</span>
+          <p class="text-zinc-400">
+            Powered by <span class="text-purple-400 font-medium">Nuxt 3</span> • <span class="text-brand-yellow font-medium">Tailwind CSS</span>
           </p>
         </div>
 

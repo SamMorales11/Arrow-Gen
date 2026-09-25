@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import { eq, desc, sql } from 'drizzle-orm'
 import { db, vaultQuestions, users } from '../database'
 import { requireRole } from '../utils/session'
+import { handleServerError } from '../utils/sanitize'
 
 export type VaultStatus = 'pending' | 'answered' | 'rejected'
 
@@ -12,7 +13,7 @@ export type VaultStatus = 'pending' | 'answered' | 'rejected'
  * Mengambil daftar pertanyaan The Vault beserta metadata dan status.
  * - Otorisasi ketat: Hanya user yang sudah login dengan role 'admin' atau 'servant'.
  * - Mendukung filter query: ?status=pending | answered | rejected | all
- * - Mengembalikan struktur response konsisten beserta statistik ringkasan.
+ * - Mengembalikan struktur response konsisten tanpa membocorkan error internal.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi: Pastikan user terautentikasi dengan role admin atau servant
@@ -88,15 +89,6 @@ export default defineEventHandler(async (event) => {
       data: questions
     }
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error
-    }
-
-    console.error('❌ [GET /api/vault Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to retrieve questions from The Vault.'
-    })
+    handleServerError(error, 'Failed to retrieve questions from The Vault.')
   }
 })

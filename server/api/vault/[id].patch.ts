@@ -2,10 +2,9 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, vaultQuestions, users } from '../../database'
 import { requireRole } from '../../utils/session'
+import { isValidUuid, stripHtml, handleServerError } from '../../utils/sanitize'
 
 export type VaultStatus = 'pending' | 'answered' | 'rejected'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface PatchVaultBody {
   answer?: unknown
@@ -22,7 +21,7 @@ export interface PatchVaultBody {
  * - Otorisasi ketat: Hanya user yang sudah login dengan role 'admin' atau 'servant'.
  * - Field yang diperbolehkan diupdate: answer, status, answeredBy, answeredAt.
  * - Otomatis mengisi answeredAt (dan answeredBy) ketika status menjadi "answered".
- * - Mengembalikan response konsisten beserta data pertanyaan terupdate.
+ * - Error handling aman tanpa kebocoran data sensitif database.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role (hanya admin dan servant)
@@ -30,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validasi ID parameter (UUID)
   const id = getRouterParam(event, 'id')
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -60,8 +59,8 @@ export default defineEventHandler(async (event) => {
   // 5. Validasi & proses field 'answer'
   if (body.answer !== undefined) {
     if (typeof body.answer === 'string') {
-      const trimmed = body.answer.trim()
-      updateData.answer = trimmed.length > 0 ? trimmed : null
+      const sanitized = stripHtml(body.answer).trim()
+      updateData.answer = sanitized.length > 0 ? sanitized : null
     } else if (body.answer === null) {
       updateData.answer = null
     } else {
@@ -89,7 +88,7 @@ export default defineEventHandler(async (event) => {
   // 7. Validasi & proses field 'answeredBy'
   if (body.answeredBy !== undefined) {
     if (typeof body.answeredBy === 'string') {
-      if (!UUID_REGEX.test(body.answeredBy)) {
+      if (!isValidUuid(body.answeredBy)) {
         throw createError({
           statusCode: 400,
           statusMessage: 'Bad Request',
@@ -103,14 +102,14 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         statusMessage: 'Bad Request',
-        message: "Field 'answeredBy' must be a UUID string or null."
+        message: "Field 'answeredBy' must be a valid UUID string or null."
       })
     }
   }
 
   // 8. Validasi & proses field 'answeredAt'
   if (body.answeredAt !== undefined) {
-    if (typeof body.answeredAt === 'string' || body.answeredAt instanceof Date) {
+    if (typeof body.answeredAt === 'string') {
       const parsedDate = new Date(body.answeredAt)
       if (isNaN(parsedDate.getTime())) {
         throw createError({
@@ -126,29 +125,22 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 400,
         statusMessage: 'Bad Request',
-        message: "Field 'answeredAt' must be a valid date or null."
+        message: "Field 'answeredAt' must be an ISO date string or null."
       })
     }
   }
 
-  // 9. Aturan Khusus: Pastikan answeredAt terisi otomatis ketika status menjadi "answered"
-  const targetStatus = updateData.status ?? (updateData.answer ? 'answered' : existing.status)
+  // 9. Logic otomatis status 'answered' & 'pending'
+  const targetStatus = updateData.status !== undefined ? updateData.status : existing.status
 
   if (targetStatus === 'answered') {
-    // Jika status diset ke 'answered' atau jawaban terisi, pastikan status adalah 'answered'
-    updateData.status = 'answered'
-
-    // Otomatis isi answeredAt jika belum diset secara eksplisit di body
-    if (updateData.answeredAt === undefined) {
+    if (updateData.answeredAt === undefined && !existing.answeredAt) {
       updateData.answeredAt = new Date()
     }
-
-    // Otomatis catat ID user yang sedang login jika answeredBy belum diset
-    if (updateData.answeredBy === undefined) {
+    if (updateData.answeredBy === undefined && !existing.answeredBy && session?.user?.id) {
       updateData.answeredBy = session.user.id
     }
   } else if (updateData.status === 'pending' && body.answeredAt === undefined && body.answeredBy === undefined) {
-    // Jika status dikembalikan ke pending, reset timestamp & user jika tidak ditentukan lain
     updateData.answeredAt = null
     updateData.answeredBy = null
   }
@@ -169,7 +161,6 @@ export default defineEventHandler(async (event) => {
       .set(updateData)
       .where(eq(vaultQuestions.id, id))
 
-    // Ambil data terbaru beserta informasi nama user penjawab
     const [updatedQuestion] = await db
       .select({
         id: vaultQuestions.id,
@@ -194,11 +185,6 @@ export default defineEventHandler(async (event) => {
       data: updatedQuestion
     }
   } catch (error: unknown) {
-    console.error('❌ [PATCH /api/vault/:id Error]:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to update question in database.'
-    })
+    handleServerError(error, 'Failed to update question in database.')
   }
 })

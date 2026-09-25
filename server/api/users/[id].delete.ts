@@ -2,8 +2,7 @@ import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, users } from '../../database'
 import { requireRole } from '../../utils/session'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isValidUuid, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -13,6 +12,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * - Akses eksklusif: Hanya untuk role 'admin'.
  * - Mencegah admin menghapus akunnya sendiri.
  * - Cascade delete menghapus sessions dan accounts secara otomatis.
+ * - Error handling aman tanpa kebocoran data sensitif.
  */
 export default defineEventHandler(async (event) => {
   // 1. Otorisasi role: Hanya admin
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
 
   // 2. Validasi ID parameter (UUID)
   const id = getRouterParam(event, 'id')
-  if (!id || !UUID_REGEX.test(id)) {
+  if (!id || !isValidUuid(id)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
@@ -66,11 +66,6 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: unknown) {
-    console.error(`❌ [DELETE /api/users/${id} Error]:`, error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
-      message: 'Failed to delete user account.'
-    })
+    handleServerError(error, 'Failed to delete user account.')
   }
 })

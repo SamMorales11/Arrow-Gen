@@ -26,8 +26,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-export type BadgeVariant = 'primary' | 'secondary' | 'accent' | 'outline' | 'success' | 'danger' | 'pixel'
-export type BadgeSize = 'sm' | 'md' | 'lg'
+type BadgeVariant = 'primary' | 'secondary' | 'accent' | 'outline' | 'success' | 'danger' | 'pixel'
+type BadgeSize = 'sm' | 'md' | 'lg'
 
 interface Props {
   variant?: BadgeVariant

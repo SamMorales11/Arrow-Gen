@@ -238,11 +238,21 @@ definePageMeta({
   layout: 'default'
 })
 
-// Head SEO
+// Head SEO & Open Graph Meta Tags
+useSeoMeta({
+  title: 'About Arrow Gen — Vision, Values & Next Generation Movement',
+  ogTitle: 'About Arrow Gen — Sharpened for Purpose, Released into Culture',
+  description: 'Discover the vision, mission, and kingdom values of Arrow Gen. We are a Christ-centered community raising young disciples to be bold in culture and rooted in truth.',
+  ogDescription: 'Like arrows in the hands of a warrior. Discover our identity, pastors, leadership, and vision for the next generation.',
+  ogImage: '/logo-arrow.png',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'About Arrow Gen — Vision & Values',
+  twitterDescription: 'Raising a generation grounded in biblical truth and released into culture with divine precision.',
+  twitterImage: '/logo-arrow.png'
+})
+
 useHead({
-  title: 'About Arrow Gen | Our Vision & Values',
-  meta: [
-    { name: 'description', content: 'Learn about the vision, people, and core kingdom values of the Arrow Gen movement.' }
-  ]
+  htmlAttrs: { lang: 'en' }
 })
 </script>
