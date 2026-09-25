@@ -14,8 +14,8 @@ import { handleServerError } from '../../utils/sanitize'
  * - Mendukung query param ?all=true untuk mengambil semua jadwal (termasuk non-aktif).
  */
 export default defineEventHandler(async (event) => {
-  // 1. Otorisasi role: Hanya admin dan servant
-  await requireRole(event, ['admin', 'servant'])
+  // 1. Otorisasi role: Admin, servant, dan demo (read-only) diizinkan
+  await requireRole(event, ['admin', 'servant', 'demo'])
 
   try {
     const query = getQuery(event)

@@ -120,6 +120,28 @@
             <span>{{ errorMessage || 'Failed to authenticate. Please verify your credentials.' }}</span>
           </div>
 
+          <!-- Demo Account Notice Banner -->
+          <div
+            class="flex items-start gap-2.5 p-3 rounded-lg bg-amber-950/30 border border-amber-800/40"
+            role="note"
+            aria-label="Demo account notice"
+          >
+            <span class="mt-0.5 shrink-0 w-4 h-4 flex items-center justify-center text-amber-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m1.636-6.364l.707.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </span>
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold text-amber-300 font-pixel tracking-wide">
+                DEMO ACCOUNT PRE-FILLED
+              </p>
+              <p class="text-[11px] text-amber-200/70 mt-0.5 leading-relaxed">
+                Read-only access — You can explore the portal but write actions are disabled.
+                Change the fields below to sign in with a different account.
+              </p>
+            </div>
+          </div>
+
           <!-- Form Element -->
           <form class="space-y-4" @submit.prevent="handleLogin">
             <!-- Email Input -->
@@ -230,8 +252,8 @@ const errorMessage = ref('')
 const showPassword = ref(false)
 
 const form = reactive({
-  email: '',
-  password: ''
+  email: 'demo@arrowgen.local',
+  password: 'DemoArrow2026!'
 })
 
 const errors = reactive({

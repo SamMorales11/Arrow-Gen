@@ -8,7 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "seed": "tsx server/database/seed.ts"
+    "seed": "tsx server/database/seed.ts",
+    "seed:demo": "tsx server/database/seed-demo.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

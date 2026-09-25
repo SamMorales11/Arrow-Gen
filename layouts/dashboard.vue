@@ -36,7 +36,7 @@
               ARROW GEN
             </span>
             <span class="text-[9px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">
-              {{ role === 'admin' ? 'ADMIN CONSOLE' : 'MINISTRY HUB' }}
+              {{ role === 'admin' ? 'ADMIN CONSOLE' : role === 'demo' ? 'DEMO MODE' : 'MINISTRY HUB' }}
             </span>
           </div>
           <UiBadge variant="pixel" size="sm" class="ml-1 hidden sm:inline-flex">
@@ -69,7 +69,7 @@
                   : 'bg-brand-purple/20 border-brand-purple/40 text-purple-300'
               ]"
             >
-              {{ role === 'admin' ? 'AD' : 'PT' }}
+              {{ role === 'admin' ? 'AD' : role === 'demo' ? 'DM' : 'PT' }}
             </div>
             <div class="min-w-0">
               <p class="text-xs font-semibold text-zinc-100 truncate">
@@ -81,8 +81,11 @@
             </div>
           </div>
 
-          <UiBadge :variant="role === 'admin' ? 'pixel' : 'accent'" size="sm">
-            {{ role === 'admin' ? 'Admin' : 'Servant' }}
+          <UiBadge
+            :variant="role === 'admin' ? 'pixel' : role === 'demo' ? 'secondary' : 'accent'"
+            size="sm"
+          >
+            {{ role === 'admin' ? 'Admin' : role === 'demo' ? 'Demo' : 'Servant' }}
           </UiBadge>
         </div>
       </div>
@@ -259,6 +262,22 @@
         </div>
       </header>
 
+      <!-- Demo Mode Read-Only Banner -->
+      <div
+        v-if="role === 'demo'"
+        class="px-4 sm:px-6 lg:px-8 py-2 bg-amber-950/40 border-b border-amber-800/30 flex items-center gap-2.5 shrink-0"
+        role="banner"
+        aria-label="Demo mode - read-only access"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" aria-hidden="true" />
+        <span class="text-[11px] text-amber-200/80 font-medium">
+          Demo Mode — Read-only access. Aksi tulis (tambah, edit, hapus) tidak diperbolehkan.
+        </span>
+        <span class="ml-auto font-pixel text-[9px] text-amber-400/80 uppercase tracking-widest shrink-0 hidden sm:inline">
+          READ ONLY
+        </span>
+      </div>
+
       <!-- Main Slot Content -->
       <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <slot />
@@ -280,7 +299,7 @@ const session = useSession()
 
 const user = computed(() => session.value.data?.user)
 const role = computed(() => (user.value as { role?: string })?.role || 'servant')
-const userName = computed(() => user.value?.name || (role.value === 'admin' ? 'Administrator' : 'Pelayan Tuhan'))
+const userName = computed(() => user.value?.name || (role.value === 'admin' ? 'Administrator' : role.value === 'demo' ? 'Demo User' : 'Pelayan Tuhan'))
 const userEmail = computed(() => user.value?.email || 'authenticated@arrowgen.church')
 
 // Helper penentu active state route

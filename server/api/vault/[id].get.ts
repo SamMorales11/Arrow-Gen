@@ -14,8 +14,8 @@ import { isValidUuid, handleServerError } from '../../utils/sanitize'
  * - Mengembalikan response konsisten tanpa membocorkan error database internal.
  */
 export default defineEventHandler(async (event) => {
-  // 1. Otorisasi: Pastikan user terautentikasi dengan role admin atau servant
-  await requireRole(event, ['admin', 'servant'])
+  // 1. Otorisasi: Pastikan user terautentikasi dengan role admin, servant, atau demo (read-only)
+  await requireRole(event, ['admin', 'servant', 'demo'])
 
   // 2. Ambil dan validasi router parameter 'id'
   const id = getRouterParam(event, 'id')

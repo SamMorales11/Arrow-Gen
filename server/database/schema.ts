@@ -17,8 +17,8 @@ import {
  * ============================================================================
  */
 
-// 1. Role Pengguna: Admin & Pelayan Tuhan (Servant)
-export const userRoleEnum = pgEnum('user_role', ['admin', 'servant'])
+// 1. Role Pengguna: Admin, Pelayan Tuhan (Servant), & Demo (Read-Only)
+export const userRoleEnum = pgEnum('user_role', ['admin', 'servant', 'demo'])
 
 // 2. Status Pertanyaan The Vault
 export const vaultStatusEnum = pgEnum('vault_question_status', [

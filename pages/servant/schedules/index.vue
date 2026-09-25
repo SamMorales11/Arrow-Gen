@@ -32,7 +32,9 @@
           Refresh
         </UiButton>
 
+        <!-- Add Schedule Entry: hidden for demo role -->
         <UiButton
+          v-if="!isDemo"
           variant="pixel"
           size="sm"
           class="text-xs"
@@ -179,6 +181,7 @@
         Set up the service time and location for upcoming ministry gatherings.
       </p>
       <UiButton
+        v-if="!isDemo"
         variant="pixel"
         size="sm"
         class="mt-4 text-xs"
@@ -253,7 +256,8 @@
             {{ item.id.slice(0, 8) }}...
           </span>
 
-          <div class="flex items-center gap-2">
+          <!-- Edit & Delete Actions: hidden for demo role -->
+          <div v-if="!isDemo" class="flex items-center gap-2">
             <UiButton
               variant="outline"
               size="sm"
@@ -282,6 +286,7 @@
               Delete
             </UiButton>
           </div>
+          <span v-else class="text-[10px] text-zinc-500 font-pixel tracking-wider">READ ONLY</span>
         </div>
       </UiCard>
     </div>
@@ -468,6 +473,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useSession } from '~/utils/auth-client'
 
 // 1. Middleware & Meta
 definePageMeta({
@@ -478,6 +484,10 @@ definePageMeta({
 useHead({
   title: 'Ministry Schedules | Servant Portal'
 })
+
+// Demo role check - read-only mode
+const session = useSession()
+const isDemo = computed(() => (session.value.data?.user as { role?: string })?.role === 'demo')
 
 // 2. Data Types
 interface ScheduleItem {

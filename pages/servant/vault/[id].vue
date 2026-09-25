@@ -216,8 +216,8 @@
         </div>
       </UiCard>
 
-      <!-- Ministry Response & Guidance Form -->
-      <UiCard variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-6">
+      <!-- Ministry Response & Guidance Form (hidden for demo role) -->
+      <UiCard v-if="!isDemo" variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-6">
         <div class="border-b border-zinc-800/80 pb-3">
           <h2 class="text-base font-bold text-zinc-100 font-sans flex items-center gap-2">
             <span>Ministry Response &amp; Prayer Pointers</span>
@@ -343,12 +343,39 @@
           </div>
         </form>
       </UiCard>
+
+      <!-- Read-Only Notice for Demo Role -->
+      <UiCard
+        v-else
+        variant="default"
+        padding="md"
+        class="border-amber-800/30 bg-amber-950/10"
+      >
+        <div class="flex items-center gap-3 py-2">
+          <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-700/40 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-amber-300 font-pixel tracking-wider">DEMO MODE – READ ONLY</p>
+            <p class="text-[11px] text-zinc-400 mt-0.5">
+              The Ministry Response form is disabled for demo accounts.
+              Sign in with an authorized account to provide pastoral guidance.
+            </p>
+          </div>
+          <NuxtLink to="/servant/vault" class="ml-auto shrink-0">
+            <UiButton variant="ghost" size="sm" class="text-xs">← Back to List</UiButton>
+          </NuxtLink>
+        </div>
+      </UiCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useSession } from '~/utils/auth-client'
 
 // 1. Middleware & Route Setup
 definePageMeta({
@@ -363,6 +390,10 @@ const questionId = computed(() => route.params.id as string)
 useHead({
   title: 'Inquiry Detail | Servant Portal'
 })
+
+// Demo role check - read-only mode
+const session = useSession()
+const isDemo = computed(() => (session.value.data?.user as { role?: string })?.role === 'demo')
 
 // 2. Data Interface
 interface VaultQuestionDetail {

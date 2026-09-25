@@ -16,8 +16,8 @@ export type VaultStatus = 'pending' | 'answered' | 'rejected'
  * - Mengembalikan struktur response konsisten tanpa membocorkan error internal.
  */
 export default defineEventHandler(async (event) => {
-  // 1. Otorisasi: Pastikan user terautentikasi dengan role admin atau servant
-  await requireRole(event, ['admin', 'servant'])
+  // 1. Otorisasi: Pastikan user terautentikasi dengan role admin, servant, atau demo (read-only)
+  await requireRole(event, ['admin', 'servant', 'demo'])
 
   try {
     const query = getQuery(event)

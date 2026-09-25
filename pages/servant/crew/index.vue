@@ -339,38 +339,41 @@
           </span>
 
           <div class="flex items-center gap-1.5">
-            <!-- Quick Status Change: Review -->
-            <button
-              v-if="item.status !== 'reviewed' && item.status !== 'accepted'"
-              type="button"
-              class="px-2 py-1 rounded text-[11px] font-medium text-sky-400 hover:text-sky-300 hover:bg-sky-950/40 transition-colors"
-              title="Mark as Under Review"
-              @click="quickUpdateStatus(item.id, 'reviewed')"
-            >
-              Review
-            </button>
+            <!-- Quick Status Buttons: hidden for demo role -->
+            <template v-if="!isDemo">
+              <!-- Quick Status Change: Review -->
+              <button
+                v-if="item.status !== 'reviewed' && item.status !== 'accepted'"
+                type="button"
+                class="px-2 py-1 rounded text-[11px] font-medium text-sky-400 hover:text-sky-300 hover:bg-sky-950/40 transition-colors"
+                title="Mark as Under Review"
+                @click="quickUpdateStatus(item.id, 'reviewed')"
+              >
+                Review
+              </button>
 
-            <!-- Quick Status Change: Accept -->
-            <button
-              v-if="item.status !== 'accepted'"
-              type="button"
-              class="px-2 py-1 rounded text-[11px] font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 transition-colors"
-              title="Accept Candidate"
-              @click="quickUpdateStatus(item.id, 'accepted')"
-            >
-              Accept
-            </button>
+              <!-- Quick Status Change: Accept -->
+              <button
+                v-if="item.status !== 'accepted'"
+                type="button"
+                class="px-2 py-1 rounded text-[11px] font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 transition-colors"
+                title="Accept Candidate"
+                @click="quickUpdateStatus(item.id, 'accepted')"
+              >
+                Accept
+              </button>
 
-            <!-- Quick Status Change: Reject -->
-            <button
-              v-if="item.status !== 'rejected'"
-              type="button"
-              class="px-2 py-1 rounded text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition-colors"
-              title="Decline Candidate"
-              @click="quickUpdateStatus(item.id, 'rejected')"
-            >
-              Reject
-            </button>
+              <!-- Quick Status Change: Reject -->
+              <button
+                v-if="item.status !== 'rejected'"
+                type="button"
+                class="px-2 py-1 rounded text-[11px] font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 transition-colors"
+                title="Decline Candidate"
+                @click="quickUpdateStatus(item.id, 'rejected')"
+              >
+                Reject
+              </button>
+            </template>
 
             <!-- Open Full Details Modal -->
             <UiButton
@@ -483,10 +486,10 @@
             </div>
           </div>
 
-          <!-- Status Modification Controls -->
+          <!-- Status Controls: read-only for demo, interactive for others -->
           <div class="space-y-2.5 pt-2 border-t border-zinc-900">
             <label class="text-xs font-pixel text-zinc-400 uppercase tracking-wider block">
-              SET CANDIDATE STATUS
+              {{ isDemo ? 'CURRENT CANDIDATE STATUS' : 'SET CANDIDATE STATUS' }}
             </label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" role="group" aria-label="Candidate status options">
               <button
@@ -494,13 +497,15 @@
                 :key="opt.value"
                 type="button"
                 :aria-pressed="modalStatus === opt.value"
+                :disabled="isDemo"
                 :class="[
                   'py-2.5 px-3 rounded-xl text-xs font-semibold border text-center transition-all flex flex-col items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
+                  isDemo ? 'cursor-not-allowed opacity-60' : '',
                   modalStatus === opt.value
                     ? opt.activeClass
                     : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
                 ]"
-                @click="modalStatus = opt.value"
+                @click="!isDemo && (modalStatus = opt.value)"
               >
                 <span>{{ opt.label }}</span>
                 <span class="text-[10px] font-normal opacity-80">{{ opt.hint }}</span>
@@ -522,18 +527,21 @@
               class="text-xs"
               @click="closeDetailModal"
             >
-              Cancel
+              {{ isDemo ? 'Close' : 'Cancel' }}
             </UiButton>
-            <UiButton
-              variant="pixel"
-              size="sm"
-              :loading="isUpdatingStatus"
-              :disabled="modalStatus === activeApplicant.status"
-              class="text-xs"
-              @click="submitStatusUpdate"
-            >
-              Update Status
-            </UiButton>
+            <template v-if="!isDemo">
+              <UiButton
+                variant="pixel"
+                size="sm"
+                :loading="isUpdatingStatus"
+                :disabled="modalStatus === activeApplicant.status"
+                class="text-xs"
+                @click="submitStatusUpdate"
+              >
+                Update Status
+              </UiButton>
+            </template>
+            <span v-else class="text-[10px] text-amber-400/80 font-pixel tracking-wider">READ ONLY</span>
           </div>
         </div>
       </div>
@@ -543,6 +551,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useSession } from '~/utils/auth-client'
 
 // 1. Page Metadata & Authentication
 definePageMeta({
@@ -553,6 +562,10 @@ definePageMeta({
 useHead({
   title: 'Crew Applicants | Servant Desk'
 })
+
+// Demo role check - read-only mode
+const session = useSession()
+const isDemo = computed(() => (session.value.data?.user as { role?: string })?.role === 'demo')
 
 // 2. Types & Interfaces
 type CrewStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected'
