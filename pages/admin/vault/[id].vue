@@ -467,7 +467,7 @@ const performSave = async () => {
 
   try {
     await $fetch(`/api/vault/${question.value.id}`, {
-      method: 'PATCH',
+      method: 'PATCH' as 'GET',
       body: {
         answer: updatedAnswer,
         status: updatedStatus

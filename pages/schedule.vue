@@ -23,26 +23,6 @@
         <p class="max-w-2xl mx-auto text-base sm:text-lg text-zinc-400 font-sans leading-relaxed">
           Every gathering is crafted to deepen your faith, ignite divine purpose, and connect you with an authentic family in Christ. Find your service and join us this week.
         </p>
-
-        <!-- Filter Category Tabs -->
-        <div class="flex flex-wrap items-center justify-center gap-2 pt-4" role="tablist" aria-label="Schedule Category Filters">
-          <button
-            v-for="category in categories"
-            :key="category.id"
-            type="button"
-            role="tab"
-            :aria-selected="activeCategory === category.id"
-            :class="[
-              'px-4 py-2 rounded-lg text-xs font-medium transition-all select-none focus-visible:ring-2 focus-visible:ring-brand-yellow focus-visible:outline-none',
-              activeCategory === category.id
-                ? 'bg-brand-purple text-white shadow-sm font-semibold'
-                : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800 hover:text-white hover:border-zinc-700'
-            ]"
-            @click="activeCategory = category.id"
-          >
-            {{ category.label }}
-          </button>
-        </div>
       </div>
     </section>
 
@@ -50,7 +30,7 @@
          2. SCHEDULE ITEMS LIST
          ==================================================================== -->
     <section class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-      
+
       <!-- Quick Information Notice Strip -->
       <div class="mb-10 p-4 rounded-xl border border-zinc-800 bg-zinc-950/80 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -69,9 +49,59 @@
         </UiBadge>
       </div>
 
-      <!-- Empty State -->
+      <!-- ── Loading Skeleton ── -->
+      <div v-if="pending" class="space-y-6">
+        <UiCard
+          v-for="i in 3"
+          :key="i"
+          variant="default"
+          padding="none"
+          class="border-zinc-800/80"
+        >
+          <div class="p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div class="flex flex-col gap-3 w-full lg:w-48 shrink-0 pb-4 lg:pb-0 border-b lg:border-b-0 lg:border-r border-zinc-800/80 lg:pr-6">
+              <UiSkeleton width="80px" height="12px" rounded="sm" />
+              <UiSkeleton width="120px" height="36px" rounded="md" />
+              <UiSkeleton width="90px" height="12px" rounded="sm" />
+            </div>
+            <div class="flex-1 space-y-3">
+              <UiSkeleton width="60%" height="28px" rounded="md" />
+              <UiSkeleton width="50%" height="16px" rounded="sm" />
+              <UiSkeleton width="80%" height="14px" rounded="sm" />
+              <UiSkeleton width="40%" height="14px" rounded="sm" />
+            </div>
+          </div>
+        </UiCard>
+      </div>
+
+      <!-- ── Error State ── -->
       <UiCard
-        v-if="filteredSchedules.length === 0"
+        v-else-if="fetchError"
+        variant="default"
+        padding="lg"
+        class="text-center py-14 border-rose-900/60 bg-rose-950/20 space-y-4"
+      >
+        <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800/80 flex items-center justify-center mx-auto text-rose-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-sm font-semibold text-zinc-100">Unable to Load Schedule</h3>
+          <p class="text-xs text-zinc-400 max-w-sm mx-auto">
+            We're having trouble loading the schedule right now. Please refresh the page or try again later.
+          </p>
+        </div>
+        <div class="pt-2 flex justify-center">
+          <UiButton variant="outline" size="sm" class="text-xs" @click="refresh()">
+            Try Again
+          </UiButton>
+        </div>
+      </UiCard>
+
+      <!-- ── Empty State ── -->
+      <UiCard
+        v-else-if="!pending && schedules.length === 0"
         variant="default"
         padding="lg"
         class="text-center py-16 border-dashed border-zinc-800 bg-zinc-950/40 space-y-4"
@@ -82,35 +112,25 @@
           </svg>
         </div>
         <div class="space-y-1">
-          <h3 class="text-sm font-semibold text-zinc-200">No Gatherings Found in this Category</h3>
+          <h3 class="text-sm font-semibold text-zinc-200">No Gatherings Scheduled Yet</h3>
           <p class="text-xs text-zinc-400 max-w-sm mx-auto">
-            We currently don't have scheduled services under this specific filter. You can explore all our regular weekly gatherings below.
+            We currently don't have any published gathering schedules. Please check back soon — our team is finalizing the upcoming lineup!
           </p>
-        </div>
-        <div class="pt-2">
-          <UiButton
-            variant="outline"
-            size="sm"
-            class="text-xs"
-            @click="activeCategory = 'all'"
-          >
-            Show All Gatherings
-          </UiButton>
         </div>
       </UiCard>
 
-      <!-- Schedule Cards Grid -->
+      <!-- ── Schedule Cards Grid ── -->
       <div v-else class="space-y-6">
         <UiCard
-          v-for="item in filteredSchedules"
+          v-for="item in schedules"
           :key="item.id"
-          :variant="item.isFeatured ? 'pixel' : 'default'"
+          variant="default"
           padding="none"
           class="border-zinc-800/80 hover:border-zinc-700 transition-all duration-200"
         >
           <div class="p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            
-            <!-- Left Block: Date, Day & Time Badge Box -->
+
+            <!-- Left Block: Day & Time Badge Box -->
             <div class="flex sm:flex-col items-center sm:items-start justify-between w-full lg:w-48 shrink-0 pb-4 lg:pb-0 border-b lg:border-b-0 lg:border-r border-zinc-800/80 lg:pr-6 gap-3">
               <div class="space-y-1">
                 <span class="font-pixel text-xs text-brand-yellow uppercase tracking-wider block">
@@ -120,44 +140,33 @@
                   {{ item.time }}
                 </p>
                 <p class="text-[11px] text-zinc-400 font-mono">
-                  {{ item.timezone }}
+                  WIB (GMT+7)
                 </p>
               </div>
 
               <UiBadge
-                :variant="item.badgeVariant"
+                variant="primary"
                 size="sm"
                 class="self-center sm:self-start mt-1"
               >
-                {{ item.typeBadge }}
+                GATHERING
               </UiBadge>
             </div>
 
-            <!-- Center Block: Title, Theme, Host, & Location -->
+            <!-- Center Block: Title, Theme & Location -->
             <div class="flex-1 space-y-3">
               <div class="flex flex-wrap items-center gap-2">
                 <h2 class="text-xl sm:text-2xl font-bold text-zinc-100 font-sans">
                   {{ item.title }}
                 </h2>
-                <span
-                  v-if="item.isFeatured"
-                  class="font-pixel text-[9px] px-2 py-0.5 rounded bg-brand-yellow text-black font-semibold"
-                >
-                  MAIN SERVICE
-                </span>
               </div>
 
               <!-- Theme & Focus -->
-              <p class="text-sm font-medium text-purple-300">
+              <p v-if="item.theme" class="text-sm font-medium text-purple-300">
                 Current Series: <span class="text-zinc-200 italic font-normal">"{{ item.theme }}"</span>
               </p>
 
-              <!-- Description -->
-              <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-2xl">
-                {{ item.description }}
-              </p>
-
-              <!-- Meta Tags: Location & Speaker -->
+              <!-- Meta Tags: Location -->
               <div class="flex flex-wrap items-center gap-4 text-xs text-zinc-400 pt-2">
                 <div class="flex items-center gap-1.5 text-zinc-300">
                   <svg class="w-4 h-4 text-brand-yellow shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,25 +175,13 @@
                   </svg>
                   <span>{{ item.location }}</span>
                 </div>
-
-                <div class="flex items-center gap-1.5">
-                  <svg class="w-4 h-4 text-brand-purple-hover shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{{ item.leader }}</span>
-                </div>
-
-                <span v-if="item.streamingAvailable" class="text-emerald-400 flex items-center gap-1 text-[11px]">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Stream Available
-                </span>
               </div>
             </div>
 
             <!-- Right Block: Actions -->
             <div class="flex flex-row lg:flex-col items-center justify-end gap-3 w-full lg:w-auto shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-zinc-800">
               <UiButton
-                :variant="item.isFeatured ? 'pixel' : 'accent'"
+                variant="pixel"
                 size="sm"
                 class="w-full lg:w-36 text-center"
                 @click="handleReminder(item.title)"
@@ -204,17 +201,6 @@
 
           </div>
         </UiCard>
-      </div>
-
-      <!-- No items found fallback -->
-      <div
-        v-if="filteredSchedules.length === 0"
-        class="text-center py-16 space-y-4"
-      >
-        <p class="font-pixel text-sm text-zinc-500">NO GATHERINGS FOUND IN THIS CATEGORY</p>
-        <UiButton variant="ghost" size="sm" @click="activeCategory = 'all'">
-          Reset Filter
-        </UiButton>
       </div>
 
     </section>
@@ -253,8 +239,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
 // Terapkan Layout Default Publik
 definePageMeta({
   layout: 'default'
@@ -278,127 +262,38 @@ useHead({
   htmlAttrs: { lang: 'en' }
 })
 
-// Kategori Filter
-const activeCategory = ref<string>('all')
-
-const categories = [
-  { id: 'all', label: 'All Gatherings' },
-  { id: 'weekend', label: 'Weekend Services' },
-  { id: 'creative', label: 'Creative & Campus' },
-  { id: 'prayer', label: 'Prayer & Intercession' },
-  { id: 'lifegroups', label: 'Life Groups' }
-]
-
-// Data Jadwal (Minimal 4 Item Lengkap dengan Hari, Waktu, Lokasi, dan Tema)
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface ScheduleItem {
-  id: number
-  category: string
+  id: string
+  title: string
   day: string
   time: string
-  timezone: string
-  title: string
-  theme: string
-  description: string
   location: string
-  leader: string
-  typeBadge: string
-  badgeVariant: 'primary' | 'secondary' | 'accent' | 'pixel'
-  isFeatured?: boolean
-  streamingAvailable?: boolean
+  theme: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
 }
 
-const schedules: ScheduleItem[] = [
-  {
-    id: 1,
-    category: 'weekend',
-    day: 'Saturday Night',
-    time: '05:00 PM',
-    timezone: 'WIB (GMT+7)',
-    title: 'Arrow Youth Movement',
-    theme: 'Unshakable Identity in Christ',
-    description: 'Our primary high-energy gathering tailored for teens and young adults featuring dynamic modern worship, inspiring teaching, and after-hours cafe connect.',
-    location: 'Main Auditorium • Central Campus (Lv. 3)',
-    leader: 'Ps. Joshua Nathan & Arrow Worship',
-    typeBadge: 'WEEKLY MAIN',
-    badgeVariant: 'primary',
-    isFeatured: true,
-    streamingAvailable: true
-  },
-  {
-    id: 2,
-    category: 'weekend',
-    day: 'Sunday Morning',
-    time: '10:00 AM',
-    timezone: 'WIB (GMT+7)',
-    title: 'Sunday Generation Service',
-    theme: 'The Power of Divine Alignment',
-    description: 'A multigenerational experience dedicated to grounded biblical exegesis, corporate prayer, discipleship breakouts, and pastoral ministry.',
-    location: 'Arrow Worship Hall • North Wing',
-    leader: 'Pastoral Teaching Team',
-    typeBadge: 'SUNDAY SERVICE',
-    badgeVariant: 'accent',
-    isFeatured: false,
-    streamingAvailable: true
-  },
-  {
-    id: 3,
-    category: 'creative',
-    day: 'Tuesday Evening',
-    time: '06:30 PM',
-    timezone: 'WIB (GMT+7)',
-    title: 'Arrow Campus & Creative Collective',
-    theme: 'Kingdom Creativity & Light in the Marketplace',
-    description: 'A collaborative lab for designers, musicians, media creators, and university students seeking to bring excellence into culture and campus life.',
-    location: 'Studio Loft 2B • Creative Center',
-    leader: 'Arrow Creative Team',
-    typeBadge: 'BI-WEEKLY LAB',
-    badgeVariant: 'secondary',
-    isFeatured: false,
-    streamingAvailable: false
-  },
-  {
-    id: 4,
-    category: 'prayer',
-    day: 'Wednesday Night',
-    time: '07:00 PM',
-    timezone: 'WIB (GMT+7)',
-    title: 'Midweek Prayer & Intercession Encounter',
-    theme: 'Burning Hearts & Open Heavens',
-    description: 'An unhurried space for intimate acoustic praise, soaking prayer, personal reflection, and earnest intercession for our city and next generation.',
-    location: 'The Upper Room Chapel & Zoom Live',
-    leader: 'Intercession Ministry',
-    typeBadge: 'PRAYER NIGHT',
-    badgeVariant: 'primary',
-    isFeatured: false,
-    streamingAvailable: true
-  },
-  {
-    id: 5,
-    category: 'lifegroups',
-    day: 'Thursday / Friday',
-    time: '07:00 PM',
-    timezone: 'WIB (GMT+7)',
-    title: 'Arrow Life Groups (Connect Circles)',
-    theme: 'Doing Life Together in Authenticity',
-    description: 'Small groups of 8-12 young people meeting across the city for shared dinners, genuine accountability, scripture discussion, and life support.',
-    location: 'Various Neighborhood Hubs & Coffee Shops',
-    leader: 'Local Connect Pastors & Leaders',
-    typeBadge: 'COMMUNITY',
-    badgeVariant: 'accent',
-    isFeatured: false,
-    streamingAvailable: false
-  }
-]
+interface PublicSchedulesResponse {
+  success: boolean
+  total: number
+  data: ScheduleItem[]
+}
 
-// Computed Filter
-const filteredSchedules = computed(() => {
-  if (activeCategory.value === 'all') {
-    return schedules
+// ─── Fetch live data from public API (no auth required) ───────────────────────
+const { data: apiResponse, pending, error: fetchError, refresh } = await useFetch<PublicSchedulesResponse>(
+  '/api/schedules/public',
+  {
+    // Caching pendek agar perubahan admin langsung tercermin
+    dedupe: 'cancel'
   }
-  return schedules.filter(item => item.category === activeCategory.value)
-})
+)
 
-// Actions
+// Computed list — hanya data dari database, tidak ada dummy
+const schedules = computed<ScheduleItem[]>(() => apiResponse.value?.data ?? [])
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
 const handleReminder = (title: string) => {
   alert(`Reminder scheduled for "${title}". A calendar invite notification has been registered!`)
 }

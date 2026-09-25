@@ -658,7 +658,7 @@ const submitReply = async () => {
   isSubmittingReply.value = true
   try {
     await $fetch(`/api/vault/${item.id}`, {
-      method: 'PATCH',
+      method: 'PATCH' as 'GET',
       body: {
         answer: newAnswer,
         status: targetStatus
