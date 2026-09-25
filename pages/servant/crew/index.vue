@@ -1,5 +1,38 @@
 <template>
   <div class="space-y-8">
+    <!-- Toast Notification Banner -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
+      <div
+        v-if="toastMessage"
+        :class="[
+          'p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-lg transition-all',
+          toastType === 'success'
+            ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+            : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+        ]"
+      >
+        <div class="flex items-center gap-2">
+          <span v-if="toastType === 'success'" class="text-emerald-400 font-bold">✓</span>
+          <span v-else class="text-rose-400 font-bold">✕</span>
+          <span>{{ toastMessage }}</span>
+        </div>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-white p-1 text-sm leading-none"
+          @click="toastMessage = ''"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+
     <!-- 1. Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-6">
       <div class="space-y-1">
@@ -558,6 +591,18 @@ const modalStatus = ref<CrewStatus>('pending')
 const isUpdatingStatus = ref(false)
 const copied = ref(false)
 
+// Toast State
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  setTimeout(() => {
+    toastMessage.value = ''
+  }, 4000)
+}
+
 // 4. Fetch Data from GET /api/crew
 const { data: responseData, pending, error, refresh } = await useFetch<CrewApiResponse>('/api/crew', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
@@ -718,27 +763,56 @@ const closeDetailModal = () => {
 const submitStatusUpdate = async () => {
   if (!activeApplicant.value) return
 
+  const targetApplicant = activeApplicant.value
+  const newStatus = modalStatus.value
+  const previousStatus = targetApplicant.status
+
+  if (newStatus === previousStatus) {
+    closeDetailModal()
+    return
+  }
+
+  // 1. Optimistic UI: Update immediately in reactive memory
+  targetApplicant.status = newStatus
+  const itemInList = applicantList.value.find(a => a.id === targetApplicant.id)
+  if (itemInList) {
+    itemInList.status = newStatus
+  }
+
+  // 2. Immediately close modal & show positive toast feedback (no waiting / spinning)
+  closeDetailModal()
+  showToast(`Candidate ${targetApplicant.fullName} status updated to "${newStatus}".`)
+
+  // 3. Sync to database in background
   isUpdatingStatus.value = true
   try {
-    await $fetch(`/api/crew/${activeApplicant.value.id}`, {
+    await $fetch(`/api/crew/${targetApplicant.id}`, {
       method: 'PATCH',
       body: {
-        status: modalStatus.value
+        status: newStatus
       }
     })
-
-    activeApplicant.value.status = modalStatus.value
-    closeDetailModal()
-    await refresh()
+    // Background refresh stats and list
+    refresh()
   } catch (err: unknown) {
+    // Revert state if network/server failed
+    targetApplicant.status = previousStatus
+    if (itemInList) itemInList.status = previousStatus
     console.error('Failed to update candidate status:', err)
-    alert('Failed to update status. Please try again.')
+    showToast('Failed to save status update. Reverted changes.', 'error')
   } finally {
     isUpdatingStatus.value = false
   }
 }
 
 const quickUpdateStatus = async (id: string, newStatus: CrewStatus) => {
+  const item = applicantList.value.find(a => a.id === id)
+  const previousStatus = item?.status
+
+  // Optimistic update
+  if (item) item.status = newStatus
+  showToast(`Status updated to "${newStatus}".`)
+
   try {
     await $fetch(`/api/crew/${id}`, {
       method: 'PATCH',
@@ -746,10 +820,11 @@ const quickUpdateStatus = async (id: string, newStatus: CrewStatus) => {
         status: newStatus
       }
     })
-    await refresh()
-  } catch (err: unknown) {
+    refresh()
+  } catch (err) {
+    if (item && previousStatus) item.status = previousStatus
     console.error('Failed to update status:', err)
-    alert('Failed to update status.')
+    showToast('Failed to update status.', 'error')
   }
 }
 </script>

@@ -2,7 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db, photos } from '../../database'
 import { requireRole } from '../../utils/session'
-import { isValidUuid, isValidUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
+import { isValidUuid, isValidImageUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -64,11 +64,11 @@ export default defineEventHandler(async (event) => {
       })
     }
     const cleanUrl = body.url.trim()
-    if (!isValidUrl(cleanUrl)) {
+    if (!isValidImageUrl(cleanUrl)) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Bad Request',
-        message: 'Invalid photo URL. Only HTTP, HTTPS, or relative paths are allowed.'
+        message: 'Invalid photo format. Only HTTP, HTTPS, relative paths, or uploaded images are allowed.'
       })
     }
     updateData.url = cleanUrl

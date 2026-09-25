@@ -1,5 +1,38 @@
 <template>
   <div class="space-y-8">
+    <!-- Toast Notification Banner -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
+      <div
+        v-if="toastMessage"
+        :class="[
+          'p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-lg transition-all',
+          toastType === 'success'
+            ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+            : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+        ]"
+      >
+        <div class="flex items-center gap-2">
+          <span v-if="toastType === 'success'" class="text-emerald-400 font-bold">✓</span>
+          <span v-else class="text-rose-400 font-bold">✕</span>
+          <span>{{ toastMessage }}</span>
+        </div>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-white p-1 text-sm leading-none"
+          @click="toastMessage = ''"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+
     <!-- 1. Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-6">
       <div class="space-y-1">
@@ -405,49 +438,179 @@
 
         <!-- Modal Form Body -->
         <form class="p-6 space-y-4 overflow-y-auto flex-1" @submit.prevent="handleSubmit">
-          <!-- Photo URL Field -->
-          <div class="space-y-1.5">
+          <!-- Source Selection Tabs -->
+          <div class="space-y-2">
             <label class="text-xs font-pixel text-zinc-300 uppercase tracking-wider block">
-              PHOTO IMAGE URL <span class="text-rose-400">*</span>
+              PHOTO SOURCE <span class="text-rose-400">*</span>
             </label>
-            <UiInput
-              v-model="form.url"
-              type="url"
-              required
-              placeholder="https://images.unsplash.com/... or /photos/reel-1.jpg"
-              class="w-full"
-            />
-            <p class="text-[11px] text-zinc-500">
-              Provide a direct HTTPS image URL or a local static path.
-            </p>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-zinc-900 rounded-xl border border-zinc-800" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="sourceMode === 'upload'"
+                :class="[
+                  'py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
+                  sourceMode === 'upload'
+                    ? 'bg-zinc-800 text-brand-yellow font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                ]"
+                @click="sourceMode = 'upload'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload from Device</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                :aria-selected="sourceMode === 'url'"
+                :class="[
+                  'py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow',
+                  sourceMode === 'url'
+                    ? 'bg-zinc-800 text-brand-yellow font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                ]"
+                @click="sourceMode = 'url'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span>Image Web URL</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Live Image Preview Card -->
-          <div v-if="form.url" class="space-y-1.5">
-            <label class="text-[10px] font-pixel text-zinc-400 uppercase tracking-wider block">
-              LIVE PREVIEW
-            </label>
-            <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-              <img
-                :src="form.url"
-                :alt="form.alt || 'Live preview'"
-                width="480"
-                height="270"
-                loading="eager"
-                decoding="async"
-                class="w-full h-full object-cover"
-                @load="previewError = false"
-                @error="previewError = true"
+          <!-- Mode 1: Upload from Device / File Explorer -->
+          <div v-if="sourceMode === 'upload'" class="space-y-3">
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/jpg,image/gif"
+              class="hidden"
+              @change="onFileSelected"
+            />
+
+            <!-- Drag & Drop Zone (When no image is chosen or user wants to replace) -->
+            <div
+              v-if="!form.url"
+              class="border-2 border-dashed border-zinc-700 hover:border-brand-purple rounded-xl p-6 text-center cursor-pointer transition-colors bg-zinc-900/40 hover:bg-zinc-900/80 group"
+              @click="triggerFileSelect"
+              @dragover.prevent
+              @drop.prevent="onFileDrop"
+            >
+              <div class="flex flex-col items-center justify-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 group-hover:border-brand-purple flex items-center justify-center text-zinc-400 group-hover:text-brand-yellow transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors">
+                    Click to browse File Explorer or drag &amp; drop
+                  </p>
+                  <p class="text-[11px] text-zinc-400 mt-0.5">
+                    PNG, JPG, WEBP or GIF (automatically optimized for web)
+                  </p>
+                </div>
+                <UiButton
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  class="text-xs mt-1 pointer-events-none"
+                >
+                  Choose Image File
+                </UiButton>
+              </div>
+            </div>
+
+            <!-- Uploaded Image Preview & Metadata -->
+            <div v-else class="space-y-2">
+              <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                <img
+                  :src="form.url"
+                  :alt="form.alt || 'Uploaded photo preview'"
+                  width="480"
+                  height="270"
+                  class="w-full h-full object-cover"
+                />
+                <div class="absolute top-2 right-2 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-md bg-black/80 hover:bg-black text-[11px] text-zinc-200 border border-zinc-700 transition-colors"
+                    @click="triggerFileSelect"
+                  >
+                    Change File
+                  </button>
+                  <button
+                    type="button"
+                    class="px-2 py-1 rounded-md bg-rose-950/80 hover:bg-rose-900 text-[11px] text-rose-300 border border-rose-800 transition-colors"
+                    @click="clearSelectedFile"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="selectedFileName" class="flex items-center justify-between text-[11px] text-zinc-400 px-1 font-mono">
+                <span class="truncate max-w-[240px]">{{ selectedFileName }}</span>
+                <span v-if="selectedFileSize">{{ selectedFileSize }}</span>
+              </div>
+            </div>
+
+            <!-- Loading overlay when compressing file -->
+            <div v-if="isProcessingFile" class="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center gap-2.5 text-xs text-amber-300">
+              <svg class="w-4 h-4 animate-spin text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Optimizing image for fast web performance...</span>
+            </div>
+          </div>
+
+          <!-- Mode 2: Direct URL Input -->
+          <div v-else-if="sourceMode === 'url'" class="space-y-3">
+            <div class="space-y-1.5">
+              <label class="text-xs font-pixel text-zinc-300 uppercase tracking-wider block">
+                IMAGE WEB URL <span class="text-rose-400">*</span>
+              </label>
+              <UiInput
+                v-model="form.url"
+                type="url"
+                placeholder="https://images.unsplash.com/... or /photos/moment-1.jpg"
+                class="w-full"
               />
-              <div
-                v-if="previewError"
-                class="absolute inset-0 bg-zinc-900/90 flex flex-col items-center justify-center p-4 text-center"
-              >
-                <svg class="w-6 h-6 text-amber-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <p class="text-xs text-amber-300">Unable to load image preview</p>
-                <p class="text-[10px] text-zinc-500 mt-0.5">Please check that the image link is valid and publicly reachable.</p>
+              <p class="text-[11px] text-zinc-500">
+                Direct HTTPS image URL from Unsplash, CDN, or static folder.
+              </p>
+            </div>
+
+            <!-- Live Image Preview Card -->
+            <div v-if="form.url" class="space-y-1.5">
+              <label class="text-[10px] font-pixel text-zinc-400 uppercase tracking-wider block">
+                LIVE PREVIEW
+              </label>
+              <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <img
+                  :src="form.url"
+                  :alt="form.alt || 'Live preview'"
+                  width="480"
+                  height="270"
+                  loading="eager"
+                  decoding="async"
+                  class="w-full h-full object-cover"
+                  @load="previewError = false"
+                  @error="previewError = true"
+                />
+                <div
+                  v-if="previewError"
+                  class="absolute inset-0 bg-zinc-900/90 flex flex-col items-center justify-center p-4 text-center"
+                >
+                  <svg class="w-6 h-6 text-amber-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p class="text-xs text-amber-300">Unable to load image preview</p>
+                  <p class="text-[10px] text-zinc-500 mt-0.5">Please check that the image link is valid and publicly reachable.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -659,6 +822,25 @@ const form = ref({
   isActive: true
 })
 
+// File Picker & Source Mode State
+const sourceMode = ref<'upload' | 'url'>('upload')
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const selectedFileName = ref('')
+const selectedFileSize = ref('')
+const isProcessingFile = ref(false)
+
+// Toast State
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  setTimeout(() => {
+    toastMessage.value = ''
+  }, 4000)
+}
+
 // 4. Fetch All Photos from API
 const { data: apiResponse, pending, error, refresh } = await useFetch<PhotosApiResponse>('/api/photos?all=true', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
@@ -727,11 +909,127 @@ const onImageLoadError = (id: string) => {
   brokenImages.value.add(id)
 }
 
-// 6. Modal Open / Close Handlers
+// 6. Local File Picker & Image Processing
+const triggerFileSelect = () => {
+  fileInputRef.value?.click()
+}
+
+const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+}
+
+const compressAndReadImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      // If smaller than 250KB, return directly without canvas re-compression
+      if (file.size < 250 * 1024) {
+        resolve(result)
+        return
+      }
+
+      const img = new Image()
+      img.onload = () => {
+        const maxDim = 1600
+        let { width, height } = img
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(result)
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+        const compressed = canvas.toDataURL(mime, 0.85)
+        resolve(compressed)
+      }
+      img.onerror = () => resolve(result)
+      img.src = result
+    }
+    reader.onerror = (err) => reject(err)
+    reader.readAsDataURL(file)
+  })
+}
+
+const processFile = async (file: File) => {
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select a valid image file (PNG, JPG, WEBP, GIF).', 'error')
+    return
+  }
+
+  // Cap initial file size at 10MB
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('Image file size must be less than 10MB.', 'error')
+    return
+  }
+
+  isProcessingFile.value = true
+  selectedFileName.value = file.name
+  selectedFileSize.value = formatBytes(file.size)
+
+  try {
+    const dataUrl = await compressAndReadImage(file)
+    form.value.url = dataUrl
+    if (!form.value.alt) {
+      form.value.alt = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ')
+    }
+    previewError.value = false
+  } catch (err) {
+    console.error('Failed to process image file:', err)
+    showToast('Failed to process selected image. Please try another file.', 'error')
+  } finally {
+    isProcessingFile.value = false
+  }
+}
+
+const onFileSelected = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    processFile(file)
+  }
+}
+
+const onFileDrop = (event: DragEvent) => {
+  const file = event.dataTransfer?.files?.[0]
+  if (file) {
+    processFile(file)
+  }
+}
+
+const clearSelectedFile = () => {
+  form.value.url = ''
+  selectedFileName.value = ''
+  selectedFileSize.value = ''
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+// 7. Modal Open / Close Handlers
 const openCreateModal = () => {
   isEditing.value = false
   currentPhotoId.value = null
   previewError.value = false
+  sourceMode.value = 'upload'
+  selectedFileName.value = ''
+  selectedFileSize.value = ''
   form.value = {
     url: '',
     alt: '',
@@ -745,6 +1043,9 @@ const openEditModal = (item: PhotoItem) => {
   isEditing.value = true
   currentPhotoId.value = item.id
   previewError.value = false
+  sourceMode.value = item.url.startsWith('data:image/') ? 'upload' : 'url'
+  selectedFileName.value = item.url.startsWith('data:image/') ? 'Selected Image from Device' : ''
+  selectedFileSize.value = ''
   form.value = {
     url: item.url,
     alt: item.alt,
@@ -757,12 +1058,13 @@ const openEditModal = (item: PhotoItem) => {
 const closeModal = () => {
   isModalOpen.value = false
   previewError.value = false
+  isProcessingFile.value = false
 }
 
-// 7. Form Submission (Create / Update)
+// 8. Form Submission (Create / Update)
 const handleSubmit = async () => {
   if (!form.value.url.trim()) {
-    alert('Please provide a valid Photo URL.')
+    showToast(sourceMode.value === 'upload' ? 'Please select an image file first.' : 'Please provide a valid Photo URL.', 'error')
     return
   }
 
@@ -770,7 +1072,7 @@ const handleSubmit = async () => {
   try {
     if (isEditing.value && currentPhotoId.value) {
       // PUT /api/photos/[id]
-      await $fetch(`/api/photos/${currentPhotoId.value}`, {
+      const res = await $fetch<{ success: boolean; data: PhotoItem }>(`/api/photos/${currentPhotoId.value}`, {
         method: 'PUT',
         body: {
           url: form.value.url.trim(),
@@ -779,9 +1081,20 @@ const handleSubmit = async () => {
           isActive: form.value.isActive
         }
       })
+
+      // Optimistic update in place
+      if (apiResponse.value?.data && res?.data) {
+        const idx = apiResponse.value.data.findIndex(p => p.id === currentPhotoId.value)
+        if (idx !== -1) {
+          apiResponse.value.data[idx] = res.data
+        }
+      }
+
+      closeModal()
+      showToast('Photo details updated successfully.')
     } else {
       // POST /api/photos
-      await $fetch('/api/photos', {
+      const res = await $fetch<{ success: boolean; data: PhotoItem }>('/api/photos', {
         method: 'POST',
         body: {
           url: form.value.url.trim(),
@@ -790,19 +1103,27 @@ const handleSubmit = async () => {
           isActive: form.value.isActive
         }
       })
+
+      // Optimistic unshift
+      if (apiResponse.value?.data && res?.data) {
+        apiResponse.value.data.unshift(res.data)
+      }
+
+      closeModal()
+      showToast('New photo added to Photo Reel successfully.')
     }
 
-    closeModal()
-    await refresh()
+    // Non-blocking background sync
+    refresh()
   } catch (err: unknown) {
     console.error('Failed to save photo:', err)
-    alert('Failed to save photo. Please verify input and try again.')
+    showToast('Failed to save photo. Please verify input and try again.', 'error')
   } finally {
     isSubmitting.value = false
   }
 }
 
-// 8. Move Up / Down Reordering Logic
+// 9. Move Up / Down Reordering Logic
 const movePhoto = async (currentIndex: number, direction: -1 | 1) => {
   const targetIndex = currentIndex + direction
   const items = filteredPhotos.value
@@ -834,30 +1155,38 @@ const movePhoto = async (currentIndex: number, direction: -1 | 1) => {
       })
     ])
 
-    await refresh()
+    showToast('Photo order updated.')
+    refresh()
   } catch (err) {
     console.error('Failed to reorder photos:', err)
+    showToast('Failed to reorder photos.', 'error')
   } finally {
     isReordering.value = false
   }
 }
 
-// 9. Quick Toggle Active Status
+// 10. Quick Toggle Active Status
 const toggleActiveStatus = async (item: PhotoItem) => {
+  const prev = item.isActive
+  item.isActive = !prev
+  showToast(`Photo ${item.isActive ? 'published' : 'hidden'}.`)
+
   try {
     await $fetch(`/api/photos/${item.id}`, {
       method: 'PUT',
       body: {
-        isActive: !item.isActive
+        isActive: item.isActive
       }
     })
-    await refresh()
+    refresh()
   } catch (err) {
+    item.isActive = prev
     console.error('Failed to toggle status:', err)
+    showToast('Failed to toggle status.', 'error')
   }
 }
 
-// 10. Delete Dialog Actions
+// 11. Delete Dialog Actions
 const openDeleteDialog = (item: PhotoItem) => {
   deletingItem.value = item
 }
@@ -865,16 +1194,23 @@ const openDeleteDialog = (item: PhotoItem) => {
 const confirmDelete = async () => {
   if (!deletingItem.value) return
 
+  const deletedId = deletingItem.value.id
   isDeleting.value = true
   try {
-    await $fetch(`/api/photos/${deletingItem.value.id}`, {
+    await $fetch(`/api/photos/${deletedId}`, {
       method: 'DELETE'
     })
+
+    if (apiResponse.value?.data) {
+      apiResponse.value.data = apiResponse.value.data.filter(p => p.id !== deletedId)
+    }
+
+    showToast('Photo deleted from reel.')
     deletingItem.value = null
-    await refresh()
+    refresh()
   } catch (err) {
     console.error('Failed to delete photo:', err)
-    alert('Failed to delete photo.')
+    showToast('Failed to delete photo.', 'error')
   } finally {
     isDeleting.value = false
   }

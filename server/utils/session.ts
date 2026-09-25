@@ -1,5 +1,5 @@
 import { auth } from './auth'
-import { toWebRequest, createError } from 'h3'
+import { createError } from 'h3'
 import type { H3Event } from 'h3'
 
 /**
@@ -13,9 +13,8 @@ import type { H3Event } from 'h3'
  * Mengambil session aktif saat ini dari request H3.
  */
 export async function getServerSession(event: H3Event) {
-  const req = toWebRequest(event)
   return await auth.api.getSession({
-    headers: req.headers
+    headers: event.headers
   })
 }
 

@@ -1,5 +1,38 @@
 <template>
   <div class="space-y-8">
+    <!-- Toast Notification Banner -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
+      <div
+        v-if="toastMessage"
+        :class="[
+          'p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-lg transition-all',
+          toastType === 'success'
+            ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+            : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+        ]"
+      >
+        <div class="flex items-center gap-2">
+          <span v-if="toastType === 'success'" class="text-emerald-400 font-bold">✓</span>
+          <span v-else class="text-rose-400 font-bold">✕</span>
+          <span>{{ toastMessage }}</span>
+        </div>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-white p-1 text-sm leading-none"
+          @click="toastMessage = ''"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+
     <!-- 1. Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-6">
       <div class="space-y-1">
@@ -643,6 +676,18 @@ const editForm = ref({
 const deletingUser = ref<ServantUser | null>(null)
 const isDeletingUser = ref(false)
 
+// Toast State
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  setTimeout(() => {
+    toastMessage.value = ''
+  }, 4000)
+}
+
 // 4. Fetch Users (role: servant) from API
 const { data: apiResponse, pending, error, refresh } = await useFetch<UsersApiResponse>('/api/users?role=servant', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
@@ -732,13 +777,13 @@ const openCreateModal = () => {
 
 const submitCreateUser = async () => {
   if (!createForm.value.name.trim() || !createForm.value.email.trim() || !createForm.value.password) {
-    alert('Please fill out all required fields.')
+    showToast('Please fill out all required fields.', 'error')
     return
   }
 
   isSubmittingCreate.value = true
   try {
-    await $fetch('/api/users', {
+    const res = await $fetch<{ success: boolean; data: ServantUser }>('/api/users', {
       method: 'POST',
       body: {
         name: createForm.value.name.trim(),
@@ -748,12 +793,17 @@ const submitCreateUser = async () => {
       }
     })
 
+    if (apiResponse.value?.data && res?.data) {
+      apiResponse.value.data.unshift(res.data)
+    }
+
     isCreateModalOpen.value = false
-    await refresh()
+    showToast('New servant account created successfully.')
+    refresh()
   } catch (err: unknown) {
     console.error('Failed to create servant:', err)
     const errorMsg = (err as { data?: { message?: string } })?.data?.message || 'Failed to create servant account.'
-    alert(errorMsg)
+    showToast(errorMsg, 'error')
   } finally {
     isSubmittingCreate.value = false
   }
@@ -774,6 +824,7 @@ const openEditModal = (user: ServantUser) => {
 const submitEditUser = async () => {
   if (!editingUser.value) return
 
+  const target = editingUser.value
   isSubmittingEdit.value = true
   try {
     const payload: { name: string; email: string; isActive: boolean; password?: string } = {
@@ -786,17 +837,25 @@ const submitEditUser = async () => {
       payload.password = editForm.value.password
     }
 
-    await $fetch(`/api/users/${editingUser.value.id}`, {
+    const res = await $fetch<{ success: boolean; data: ServantUser }>(`/api/users/${target.id}`, {
       method: 'PATCH',
       body: payload
     })
 
+    if (apiResponse.value?.data && res?.data) {
+      const idx = apiResponse.value.data.findIndex(u => u.id === target.id)
+      if (idx !== -1) {
+        apiResponse.value.data[idx] = res.data
+      }
+    }
+
     editingUser.value = null
-    await refresh()
+    showToast('Servant account updated successfully.')
+    refresh()
   } catch (err: unknown) {
     console.error('Failed to update servant:', err)
     const errorMsg = (err as { data?: { message?: string } })?.data?.message || 'Failed to update account.'
-    alert(errorMsg)
+    showToast(errorMsg, 'error')
   } finally {
     isSubmittingEdit.value = false
   }
@@ -804,17 +863,22 @@ const submitEditUser = async () => {
 
 // 9. Quick Toggle Activation
 const toggleUserActivation = async (user: ServantUser) => {
+  const prev = user.isActive
+  user.isActive = !prev
+  showToast(`Account ${user.isActive ? 'activated' : 'deactivated'}.`)
+
   try {
     await $fetch(`/api/users/${user.id}`, {
       method: 'PATCH',
       body: {
-        isActive: !user.isActive
+        isActive: user.isActive
       }
     })
-    await refresh()
+    refresh()
   } catch (err: unknown) {
+    user.isActive = prev
     console.error('Failed to toggle activation status:', err)
-    alert('Failed to update activation status.')
+    showToast('Failed to update activation status.', 'error')
   }
 }
 
@@ -826,16 +890,23 @@ const openDeleteDialog = (user: ServantUser) => {
 const confirmDeleteUser = async () => {
   if (!deletingUser.value) return
 
+  const deletedId = deletingUser.value.id
   isDeletingUser.value = true
   try {
-    await $fetch(`/api/users/${deletingUser.value.id}`, {
+    await $fetch(`/api/users/${deletedId}`, {
       method: 'DELETE'
     })
+
+    if (apiResponse.value?.data) {
+      apiResponse.value.data = apiResponse.value.data.filter(u => u.id !== deletedId)
+    }
+
     deletingUser.value = null
-    await refresh()
+    showToast('Servant account removed successfully.')
+    refresh()
   } catch (err: unknown) {
     console.error('Failed to delete servant account:', err)
-    alert('Failed to delete account.')
+    showToast('Failed to delete account.', 'error')
   } finally {
     isDeletingUser.value = false
   }

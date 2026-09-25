@@ -252,8 +252,8 @@
             <p class="font-pixel text-[10px] text-zinc-400 uppercase tracking-wider">Internal</p>
             <ul class="space-y-1.5 text-zinc-400">
               <li><NuxtLink to="/dashboard" class="hover:text-zinc-200 transition-colors">Portal Pelayan Tuhan</NuxtLink></li>
-              <li><NuxtLink to="/dashboard/jadwal" class="hover:text-zinc-200 transition-colors">Jadwal Tugas</NuxtLink></li>
-              <li><NuxtLink to="/dashboard/generator" class="hover:text-zinc-200 transition-colors">Arrow Studio</NuxtLink></li>
+              <li><NuxtLink to="/servant/schedules" class="hover:text-zinc-200 transition-colors">Jadwal Pelayanan</NuxtLink></li>
+              <li><NuxtLink to="/admin" class="hover:text-zinc-200 transition-colors">Admin Control Desk</NuxtLink></li>
             </ul>
           </div>
 

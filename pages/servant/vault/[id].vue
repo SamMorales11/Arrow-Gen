@@ -143,6 +143,32 @@
         </div>
       </div>
 
+      <!-- Error Notification Banner -->
+      <div
+        v-if="saveErrorMessage"
+        class="p-4 rounded-xl bg-rose-950/50 border border-rose-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-rose-300 transition-all animate-fadeIn"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-rose-900/60 border border-rose-500/50 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-rose-200">Unable to Save Changes</p>
+            <p class="text-[11px] text-rose-400">{{ saveErrorMessage }}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="text-rose-400 hover:text-rose-200 p-1 text-xs"
+          aria-label="Dismiss banner"
+          @click="saveErrorMessage = ''"
+        >
+          &times;
+        </button>
+      </div>
+
       <!-- Question Overview Card -->
       <UiCard variant="default" padding="md" class="border-zinc-800 bg-zinc-950/80 space-y-4">
         <!-- Metadata Header -->
@@ -375,6 +401,7 @@ const form = ref({
 
 const isSubmitting = ref(false)
 const showSuccessBanner = ref(false)
+const saveErrorMessage = ref('')
 
 // Inisialisasi form saat data berhasil dimuat
 watch(
@@ -427,22 +454,36 @@ const performSave = async () => {
   if (!question.value) return false
   isSubmitting.value = true
   showSuccessBanner.value = false
+  saveErrorMessage.value = ''
+
+  const prevAnswer = question.value.answer
+  const prevStatus = question.value.status
+  const updatedAnswer = form.value.answer
+  const updatedStatus = form.value.status
+
+  // Optimistic update in reactive state
+  question.value.answer = updatedAnswer
+  question.value.status = updatedStatus
 
   try {
     await $fetch(`/api/vault/${question.value.id}`, {
       method: 'PATCH',
       body: {
-        answer: form.value.answer,
-        status: form.value.status
+        answer: updatedAnswer,
+        status: updatedStatus
       }
     })
 
-    await refresh()
     showSuccessBanner.value = true
+    // Non-blocking background sync
+    refresh()
     return true
   } catch (err: unknown) {
+    // Revert on failure
+    question.value.answer = prevAnswer
+    question.value.status = prevStatus
     console.error('Failed to save guidance:', err)
-    alert('Failed to save guidance. Please verify network and try again.')
+    saveErrorMessage.value = 'Failed to save guidance. Please verify network and try again.'
     return false
   } finally {
     isSubmitting.value = false

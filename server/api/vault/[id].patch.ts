@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { db, vaultQuestions, users } from '../../database'
+import { db, vaultQuestions } from '../../database'
 import { requireRole } from '../../utils/session'
 import { isValidUuid, stripHtml, handleServerError } from '../../utils/sanitize'
 
@@ -37,26 +37,11 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 3. Pastikan pertanyaan yang ingin diupdate ada di database
-  const [existing] = await db
-    .select()
-    .from(vaultQuestions)
-    .where(eq(vaultQuestions.id, id))
-    .limit(1)
-
-  if (!existing) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Not Found',
-      message: `The Vault question with ID "${id}" was not found.`
-    })
-  }
-
-  // 4. Parse request body
+  // 3. Parse request body
   const body = (await readBody<PatchVaultBody>(event)) || {}
   const updateData: Partial<typeof vaultQuestions.$inferInsert> = {}
 
-  // 5. Validasi & proses field 'answer'
+  // 4. Validasi & proses field 'answer'
   if (body.answer !== undefined) {
     if (typeof body.answer === 'string') {
       const sanitized = stripHtml(body.answer).trim()
@@ -72,7 +57,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 6. Validasi & proses field 'status'
+  // 5. Validasi & proses field 'status'
   const validStatuses: VaultStatus[] = ['pending', 'answered', 'rejected']
   if (body.status !== undefined) {
     if (typeof body.status !== 'string' || !validStatuses.includes(body.status as VaultStatus)) {
@@ -85,7 +70,7 @@ export default defineEventHandler(async (event) => {
     updateData.status = body.status as VaultStatus
   }
 
-  // 7. Validasi & proses field 'answeredBy'
+  // 6. Validasi & proses field 'answeredBy'
   if (body.answeredBy !== undefined) {
     if (typeof body.answeredBy === 'string') {
       if (!isValidUuid(body.answeredBy)) {
@@ -107,7 +92,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 8. Validasi & proses field 'answeredAt'
+  // 7. Validasi & proses field 'answeredAt'
   if (body.answeredAt !== undefined) {
     if (typeof body.answeredAt === 'string') {
       const parsedDate = new Date(body.answeredAt)
@@ -130,14 +115,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 9. Logic otomatis status 'answered' & 'pending'
-  const targetStatus = updateData.status !== undefined ? updateData.status : existing.status
-
-  if (targetStatus === 'answered') {
-    if (updateData.answeredAt === undefined && !existing.answeredAt) {
+  // 8. Logic otomatis status 'answered' & 'pending'
+  const effectiveStatus = updateData.status ?? (updateData.answer ? 'answered' : undefined)
+  if (effectiveStatus === 'answered') {
+    if (updateData.answeredAt === undefined) {
       updateData.answeredAt = new Date()
     }
-    if (updateData.answeredBy === undefined && !existing.answeredBy && session?.user?.id) {
+    if (updateData.answeredBy === undefined && session?.user?.id) {
       updateData.answeredBy = session.user.id
     }
   } else if (updateData.status === 'pending' && body.answeredAt === undefined && body.answeredBy === undefined) {
@@ -145,7 +129,7 @@ export default defineEventHandler(async (event) => {
     updateData.answeredBy = null
   }
 
-  // 10. Pastikan ada field yang diupdate
+  // 9. Pastikan ada field yang diupdate
   if (Object.keys(updateData).length === 0) {
     throw createError({
       statusCode: 400,
@@ -154,35 +138,30 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 11. Eksekusi update di database
+  // 10. Eksekusi single atomic update di database dalam 1 roundtrip
   try {
-    await db
+    const [updatedQuestion] = await db
       .update(vaultQuestions)
       .set(updateData)
       .where(eq(vaultQuestions.id, id))
+      .returning()
 
-    const [updatedQuestion] = await db
-      .select({
-        id: vaultQuestions.id,
-        question: vaultQuestions.question,
-        category: vaultQuestions.category,
-        status: vaultQuestions.status,
-        answer: vaultQuestions.answer,
-        answeredBy: vaultQuestions.answeredBy,
-        answeredByName: users.name,
-        answeredByEmail: users.email,
-        answeredAt: vaultQuestions.answeredAt,
-        createdAt: vaultQuestions.createdAt
+    if (!updatedQuestion) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Not Found',
+        message: `The Vault question with ID "${id}" was not found.`
       })
-      .from(vaultQuestions)
-      .leftJoin(users, eq(vaultQuestions.answeredBy, users.id))
-      .where(eq(vaultQuestions.id, id))
-      .limit(1)
+    }
 
     return {
       success: true,
       message: 'The Vault question updated successfully.',
-      data: updatedQuestion
+      data: {
+        ...updatedQuestion,
+        answeredByName: updatedQuestion.answeredBy === session.user?.id ? (session.user?.name || 'Pastor / Servant') : null,
+        answeredByEmail: updatedQuestion.answeredBy === session.user?.id ? (session.user?.email || null) : null
+      }
     }
   } catch (error: unknown) {
     handleServerError(error, 'Failed to update question in database.')

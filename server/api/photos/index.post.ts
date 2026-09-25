@@ -1,7 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { db, photos } from '../../database'
 import { requireRole } from '../../utils/session'
-import { isValidUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
+import { isValidImageUrl, sanitizeString, handleServerError } from '../../utils/sanitize'
 
 /**
  * ============================================================================
@@ -9,7 +9,7 @@ import { isValidUrl, sanitizeString, handleServerError } from '../../utils/sanit
  * ============================================================================
  * Menambahkan foto baru ke dalam koleksi Photo Reel.
  * - Akses terbatas: hanya untuk role 'admin'.
- * - Validasi ketat pada `url` (hanya HTTP/HTTPS/path aman), `alt`, dan urutan `order`.
+ * - Validasi ketat pada `url` (HTTP, HTTPS, local static path, atau Base64 image data URL), `alt`, dan urutan `order`.
  */
 
 interface CreatePhotoBody {
@@ -30,16 +30,16 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
-      message: 'Photo URL is required.'
+      message: 'Photo URL or uploaded image is required.'
     })
   }
 
   const cleanUrl = body.url.trim()
-  if (!isValidUrl(cleanUrl)) {
+  if (!isValidImageUrl(cleanUrl)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Bad Request',
-      message: 'Invalid photo URL. Only HTTP, HTTPS, or relative paths are allowed.'
+      message: 'Invalid photo format. Please provide a valid HTTP/HTTPS URL or upload an image file (PNG, JPG, WEBP).'
     })
   }
 

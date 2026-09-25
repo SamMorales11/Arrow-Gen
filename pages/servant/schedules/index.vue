@@ -611,7 +611,7 @@ const saveSchedule = async () => {
   try {
     if (isEditMode.value && currentScheduleId.value) {
       // PUT /api/schedules/[id]
-      await $fetch(`/api/schedules/${currentScheduleId.value}`, {
+      const res = await $fetch<{ success: boolean; data: ScheduleItem }>(`/api/schedules/${currentScheduleId.value}`, {
         method: 'PUT',
         body: {
           title: form.value.title.trim(),
@@ -622,10 +622,20 @@ const saveSchedule = async () => {
           isActive: form.value.isActive
         }
       })
+
+      // Optimistically update list in-place
+      if (apiResponse.value?.data && res?.data) {
+        const idx = apiResponse.value.data.findIndex(s => s.id === currentScheduleId.value)
+        if (idx !== -1) {
+          apiResponse.value.data[idx] = res.data
+        }
+      }
+
+      closeModal()
       showToast('Ministry schedule updated successfully.')
     } else {
       // POST /api/schedules
-      await $fetch('/api/schedules', {
+      const res = await $fetch<{ success: boolean; data: ScheduleItem }>('/api/schedules', {
         method: 'POST',
         body: {
           title: form.value.title.trim(),
@@ -636,14 +646,22 @@ const saveSchedule = async () => {
           isActive: form.value.isActive
         }
       })
+
+      // Optimistically prepend new schedule into list
+      if (apiResponse.value?.data && res?.data) {
+        apiResponse.value.data.unshift(res.data)
+      }
+
+      closeModal()
       showToast('New gathering schedule added successfully.')
     }
 
-    closeModal()
-    await refresh()
+    // Non-blocking background sync
+    refresh()
   } catch (err: unknown) {
     console.error('Failed to save schedule:', err)
-    modalError.value = 'Failed to save schedule. Please check all fields and try again.'
+    const errData = err && typeof err === 'object' && 'data' in err ? (err as { data?: { message?: string } }).data : null
+    modalError.value = errData?.message || 'Failed to save schedule. Please check all fields and try again.'
   } finally {
     isSaving.value = false
   }

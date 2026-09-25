@@ -84,6 +84,29 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+const DATA_IMAGE_PREFIX_REGEX = /^data:image\/(jpeg|jpg|png|webp|gif|svg\+xml);base64,/i
+
+/**
+ * Memeriksa apakah format URL foto valid:
+ * 1. Data URL base64 gambar aman (data:image/...) hingga ~7MB
+ * 2. Standard HTTP / HTTPS URL
+ * 3. Relative path aman (/...)
+ */
+export function isValidImageUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false
+  const trimmed = url.trim()
+
+  // 1. Base64 Data URL dari file picker browser
+  if (trimmed.startsWith('data:image/')) {
+    // Batasi panjang string maksimal 7.5 MB (~5.5MB binary)
+    if (trimmed.length > 7.5 * 1024 * 1024) return false
+    return DATA_IMAGE_PREFIX_REGEX.test(trimmed)
+  }
+
+  // 2. Standard URL atau relative path
+  return isValidUrl(trimmed)
+}
+
 /**
  * Memeriksa apakah string merupakan format UUID valid.
  */

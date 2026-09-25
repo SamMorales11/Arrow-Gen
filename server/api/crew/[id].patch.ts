@@ -33,25 +33,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 3. Pastikan data pendaftar ada di database
-  const [existing] = await db
-    .select()
-    .from(crewApplications)
-    .where(eq(crewApplications.id, id))
-    .limit(1)
-
-  if (!existing) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Not Found',
-      message: `Crew applicant with ID "${id}" was not found.`
-    })
-  }
-
-  // 4. Parse request body
+  // 3. Parse request body
   const body = (await readBody<PatchCrewBody>(event)) || {}
 
-  // 5. Validasi field 'status'
+  // 4. Validasi field 'status'
   const validStatuses: CrewApplicationStatus[] = ['pending', 'reviewed', 'accepted', 'rejected']
   if (!body.status || typeof body.status !== 'string' || !validStatuses.includes(body.status as CrewApplicationStatus)) {
     throw createError({
@@ -63,7 +48,7 @@ export default defineEventHandler(async (event) => {
 
   const newStatus = body.status as CrewApplicationStatus
 
-  // 6. Eksekusi update di database
+  // 5. Eksekusi atomic update di database dalam 1 roundtrip
   try {
     const [updated] = await db
       .update(crewApplications)
@@ -73,6 +58,14 @@ export default defineEventHandler(async (event) => {
       })
       .where(eq(crewApplications.id, id))
       .returning()
+
+    if (!updated) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Not Found',
+        message: `Crew applicant with ID "${id}" was not found.`
+      })
+    }
 
     return {
       success: true,

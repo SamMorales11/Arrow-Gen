@@ -1,5 +1,38 @@
 <template>
   <div class="space-y-8">
+    <!-- Toast Notification Banner -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-2"
+    >
+      <div
+        v-if="toastMessage"
+        :class="[
+          'p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-lg transition-all',
+          toastType === 'success'
+            ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+            : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+        ]"
+      >
+        <div class="flex items-center gap-2">
+          <span v-if="toastType === 'success'" class="text-emerald-400 font-bold">✓</span>
+          <span v-else class="text-rose-400 font-bold">✕</span>
+          <span>{{ toastMessage }}</span>
+        </div>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-white p-1 text-sm leading-none"
+          @click="toastMessage = ''"
+        >
+          &times;
+        </button>
+      </div>
+    </transition>
+
     <!-- 1. Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-6">
       <div class="space-y-1">
@@ -510,6 +543,18 @@ const replyForm = ref({
   status: 'answered' as 'pending' | 'answered' | 'rejected'
 })
 
+// Toast State
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  toastMessage.value = message
+  toastType.value = type
+  setTimeout(() => {
+    toastMessage.value = ''
+  }, 4000)
+}
+
 // 4. Fetch Data from GET /api/vault
 const { data: responseData, pending, error, refresh } = await useFetch<VaultApiResponse>('/api/vault', {
   headers: useRequestHeaders(['cookie']) as Record<string, string>
@@ -616,27 +661,60 @@ const closeDetailModal = () => {
 const submitReply = async () => {
   if (!activeModalQuestion.value) return
 
+  const item = activeModalQuestion.value
+  const newAnswer = replyForm.value.answer
+  const newStatus = replyForm.value.status
+  const prevAnswer = item.answer
+  const prevStatus = item.status
+
+  // 1. Optimistic UI: update reactive data immediately
+  item.answer = newAnswer
+  item.status = newStatus
+  const inList = vaultQuestionsList.value.find(q => q.id === item.id)
+  if (inList) {
+    inList.answer = newAnswer
+    inList.status = newStatus
+  }
+
+  // 2. Close modal immediately and show toast (no waiting / spinning)
+  closeDetailModal()
+  showToast('Pastoral response saved successfully.')
+
+  // 3. Background sync to database
   isSubmittingReply.value = true
   try {
-    await $fetch(`/api/vault/${activeModalQuestion.value.id}`, {
+    await $fetch(`/api/vault/${item.id}`, {
       method: 'PATCH',
       body: {
-        answer: replyForm.value.answer,
-        status: replyForm.value.status
+        answer: newAnswer,
+        status: newStatus
       }
     })
-
-    closeDetailModal()
-    await refresh()
+    // Background refresh
+    refresh()
   } catch (err: unknown) {
+    // Revert on error
+    item.answer = prevAnswer
+    item.status = prevStatus
+    if (inList) {
+      inList.answer = prevAnswer
+      inList.status = prevStatus
+    }
     console.error('Failed to submit reply:', err)
-    alert('Failed to save pastoral response. Please check your connection.')
+    showToast('Failed to save pastoral response. Reverted changes.', 'error')
   } finally {
     isSubmittingReply.value = false
   }
 }
 
 const quickUpdateStatus = async (id: string, newStatus: 'pending' | 'answered' | 'rejected') => {
+  const item = vaultQuestionsList.value.find(q => q.id === id)
+  const prev = item?.status
+
+  // Optimistic update
+  if (item) item.status = newStatus
+  showToast(`Status updated to "${newStatus}".`)
+
   try {
     await $fetch(`/api/vault/${id}`, {
       method: 'PATCH',
@@ -644,9 +722,11 @@ const quickUpdateStatus = async (id: string, newStatus: 'pending' | 'answered' |
         status: newStatus
       }
     })
-    await refresh()
+    refresh()
   } catch (err) {
+    if (item && prev) item.status = prev
     console.error('Failed to update status:', err)
+    showToast('Failed to update question status.', 'error')
   }
 }
 </script>
