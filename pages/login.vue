@@ -35,15 +35,15 @@
         <!-- Prominent Brand Logo Above Form -->
         <div class="flex flex-col items-center justify-center text-center space-y-3">
           <NuxtLink to="/" class="inline-block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow rounded-2xl" title="Return to Arrow Gen Homepage" aria-label="Return to Arrow Gen Homepage">
-            <div class="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800/80 shadow-2xl group-hover:border-brand-purple/50 group-hover:shadow-brand-purple/20 transition-all duration-300">
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800/80 shadow-2xl group-hover:border-brand-yellow/50 group-hover:shadow-brand-yellow/20 transition-all duration-300">
               <img
                 src="/logo-arrow.png"
                 alt="Arrow Gen Logo"
-                width="64"
-                height="64"
+                width="72"
+                height="72"
                 loading="eager"
                 decoding="async"
-                class="pixel-logo h-16 w-auto object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_16px_rgba(147,51,234,0.4)]"
+                class="pixel-logo h-16 sm:h-[72px] w-auto object-contain mx-auto transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_20px_rgba(251,191,36,0.25)]"
               />
             </div>
           </NuxtLink>

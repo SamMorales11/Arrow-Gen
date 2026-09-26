@@ -17,6 +17,7 @@ export default defineNuxtConfig({
     head: {
       link: [
         { rel: 'icon', type: 'image/png', href: '/logo-arrow.png' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', href: '/logo-arrow.png' }
       ]
     }
@@ -67,5 +68,5 @@ export default defineNuxtConfig({
   },
 
   // 8. Developer Experience
-  devtools: { enabled: true }
+  devtools: { enabled: false }
 })

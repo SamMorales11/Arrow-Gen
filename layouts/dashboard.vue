@@ -25,11 +25,11 @@
           <img
             src="/logo-arrow.png"
             alt="Arrow Gen Logo"
-            width="40"
-            height="40"
+            width="44"
+            height="44"
             loading="eager"
             decoding="async"
-            class="pixel-logo h-10 w-auto object-contain shrink-0 transition-transform group-hover:scale-105"
+            class="pixel-logo h-10 lg:h-11 w-auto object-contain shrink-0 transition-transform group-hover:scale-105"
           />
           <div class="flex flex-col">
             <span class="font-pixel text-brand-yellow text-xs tracking-wider group-hover:text-amber-300 transition-colors">

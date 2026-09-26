@@ -12,11 +12,11 @@
           <img
             src="/logo-arrow.png"
             alt="Arrow Gen Logo"
-            width="36"
-            height="36"
+            width="40"
+            height="40"
             loading="eager"
             decoding="async"
-            class="pixel-logo h-7 sm:h-9 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
+            class="pixel-logo h-8 md:h-10 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
           />
           <span class="font-pixel text-brand-yellow text-xs sm:text-sm tracking-wider flex items-center gap-2 group-hover:text-amber-300 transition-colors">
             ARROW GEN
