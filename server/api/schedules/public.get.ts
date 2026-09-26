@@ -1,4 +1,4 @@
-import { defineEventHandler } from 'h3'
+import { defineEventHandler, setHeader } from 'h3'
 import { eq, asc } from 'drizzle-orm'
 import { db, schedules } from '../../database'
 import { handleServerError } from '../../utils/sanitize'
@@ -12,7 +12,10 @@ import { handleServerError } from '../../utils/sanitize'
  * - Hanya mengembalikan jadwal dengan isActive = true.
  * - Diurutkan berdasarkan waktu pembuatan secara ascending.
  */
-export default defineEventHandler(async (_event) => {
+export default defineEventHandler(async (event) => {
+  // Edge & Browser Caching Header: 60s cache, 300s SWR
+  setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
+
   try {
     const data = await db
       .select()

@@ -1,4 +1,4 @@
-import { defineEventHandler, getQuery } from 'h3'
+import { defineEventHandler, getQuery, setHeader } from 'h3'
 import { eq, asc } from 'drizzle-orm'
 import { db, photos } from '../../database'
 import { requireRole } from '../../utils/session'
@@ -22,6 +22,10 @@ export default defineEventHandler(async (event) => {
     if (query.all === 'true') {
       await requireRole(event, ['admin'])
       showAll = true
+      setHeader(event, 'Cache-Control', 'no-store, no-cache, must-revalidate')
+    } else {
+      // Public caching: 120s browser, 600s CDN edge cache
+      setHeader(event, 'Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=1200')
     }
 
     const queryBuilder = db.select().from(photos)

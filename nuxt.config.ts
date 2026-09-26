@@ -9,7 +9,14 @@ export default defineNuxtConfig({
 
   // 2. Nitro & Vercel Deployment Configuration
   nitro: {
-    preset: process.env.VERCEL ? 'vercel' : undefined
+    preset: process.env.VERCEL ? 'vercel' : undefined,
+    compressPublicAssets: true
+  },
+
+  // 3. Static Asset Performance Route Rules
+  routeRules: {
+    '/logo-arrow.png': { headers: { 'cache-control': 'public, max-age=604800, immutable' } },
+    '/favicon.ico': { headers: { 'cache-control': 'public, max-age=604800, immutable' } }
   },
 
   // App Metadata & Favicon
@@ -23,20 +30,20 @@ export default defineNuxtConfig({
     }
   },
 
-  // 3. TypeScript Configuration
+  // 4. TypeScript Configuration
   typescript: {
     strict: true
   },
 
-  // 4. Nuxt Modules
+  // 5. Nuxt Modules
   modules: [
     '@nuxtjs/google-fonts'
   ],
 
-  // 5. Google Fonts Configuration (Space Grotesk & Press Start 2P)
+  // 6. Optimized Google Fonts Configuration (Space Grotesk & Press Start 2P)
   googleFonts: {
     families: {
-      'Space Grotesk': [300, 400, 500, 600, 700],
+      'Space Grotesk': [400, 500, 600, 700],
       'Press Start 2P': true
     },
     display: 'swap',
@@ -46,12 +53,15 @@ export default defineNuxtConfig({
     inject: true
   },
 
-  // 6. CSS & Tailwind CSS Integration (via Vite Plugin)
+  // 7. CSS & Tailwind CSS Integration (via Vite Plugin)
   css: ['~/assets/css/main.css'],
   vite: {
     plugins: [
       tailwindcss()
-    ]
+    ],
+    build: {
+      cssMinify: true
+    }
   },
 
   // 7. Runtime Configuration (Environment Variables)

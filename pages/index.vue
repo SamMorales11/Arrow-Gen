@@ -524,9 +524,10 @@ const defaultPhotos: ReelPhoto[] = [
   }
 ]
 
-// Fetch live active photos from ministry API (with fallback to curated defaults)
+// Fetch live active photos from ministry API on client (avoiding 6MB SSR payload bloat)
 const { data: apiPhotosResponse } = await useFetch<PhotoApiResponse>('/api/photos', {
-  lazy: true
+  lazy: true,
+  server: false
 })
 
 const photos = computed<ReelPhoto[]>(() => {
