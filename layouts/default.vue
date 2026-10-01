@@ -222,72 +222,133 @@
     </main>
 
     <!-- ====================================================================
-         3. FOOTER
+         3. FOOTER — v3 Airy Minimal
          ==================================================================== -->
-    <footer class="border-t border-zinc-900 bg-black/95 py-12 px-4 sm:px-6 lg:px-8 text-xs text-zinc-500">
-      <div class="max-w-7xl mx-auto space-y-8">
+    <footer class="border-t border-zinc-800/60 bg-black pt-14 pb-10 px-4 sm:px-6 lg:px-8 text-xs text-zinc-400 relative">
+      
+      <!-- Top accent line -->
+      <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-purple/40 to-transparent pointer-events-none" aria-hidden="true" />
+
+      <div class="max-w-7xl mx-auto space-y-10">
         
-        <!-- Footer Navigation Links Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-2 pb-6 border-b border-zinc-900">
-          <div class="space-y-2">
-            <p class="font-pixel text-[10px] text-brand-yellow uppercase tracking-wider">Navigation</p>
-            <ul class="space-y-1.5 text-zinc-400">
-              <li><NuxtLink to="/" class="hover:text-zinc-200 transition-colors">Home</NuxtLink></li>
-              <li><NuxtLink to="/about" class="hover:text-zinc-200 transition-colors">About Us</NuxtLink></li>
-              <li><NuxtLink to="/schedule" class="hover:text-zinc-200 transition-colors">Gathering Schedule</NuxtLink></li>
-              <li><NuxtLink to="/first-time" class="hover:text-zinc-200 transition-colors">First Time Guide</NuxtLink></li>
-            </ul>
-          </div>
-
-          <div class="space-y-2">
-            <p class="font-pixel text-[10px] text-purple-400 uppercase tracking-wider">Community</p>
-            <ul class="space-y-1.5 text-zinc-400">
-              <li><NuxtLink to="/vault" class="hover:text-zinc-200 transition-colors">The Vault (Anonymous Q&amp;A)</NuxtLink></li>
-              <li><NuxtLink to="/join-the-crew" class="hover:text-zinc-200 transition-colors">Join The Crew</NuxtLink></li>
-              <li><NuxtLink to="/connect" class="hover:text-zinc-200 transition-colors">WhatsApp Pastoral Chat</NuxtLink></li>
-            </ul>
-          </div>
-
-          <div class="space-y-2">
-            <p class="font-pixel text-[10px] text-zinc-400 uppercase tracking-wider">Internal</p>
-            <ul class="space-y-1.5 text-zinc-400">
-              <li><NuxtLink to="/dashboard" class="hover:text-zinc-200 transition-colors">Portal Pelayan Tuhan</NuxtLink></li>
-              <li><NuxtLink to="/servant/schedules" class="hover:text-zinc-200 transition-colors">Jadwal Pelayanan</NuxtLink></li>
-              <li><NuxtLink to="/admin" class="hover:text-zinc-200 transition-colors">Admin Control Desk</NuxtLink></li>
-            </ul>
-          </div>
-
-          <div class="space-y-2">
-            <p class="font-pixel text-[10px] text-brand-yellow uppercase tracking-wider">Arrow Movement</p>
-            <p class="text-zinc-400 text-xs leading-relaxed">
-              Empowering next generation youth &amp; young adults with kingdom purpose and authenticity.
+        <!-- Row 1: Brand + Quick Links (2-zone, side by side) -->
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10">
+          
+          <!-- Left: Brand identity -->
+          <div class="space-y-3 max-w-md">
+            <div class="flex items-center gap-3">
+              <img
+                src="/logo-arrow.png"
+                alt="Arrow Gen Logo"
+                width="28"
+                height="28"
+                loading="lazy"
+                decoding="async"
+                class="pixel-logo h-7 w-auto object-contain shrink-0"
+              />
+              <span class="font-bold text-lg text-zinc-100 font-sans tracking-tight">
+                ARROW GEN
+              </span>
+              <span class="font-pixel text-[9px] text-brand-yellow tracking-widest">
+                EST. 2026
+              </span>
+            </div>
+            <p class="text-xs text-zinc-400 leading-relaxed">
+              Equipping the next generation to stand in truth, walk in authority, and shoot straight with purpose.
             </p>
-            <UiBadge variant="success" size="sm" dot class="mt-2">
-              All Systems Operational
-            </UiBadge>
+          </div>
+
+          <!-- Right: Compact nav links -->
+          <div class="flex flex-wrap gap-x-10 gap-y-6 text-xs">
+            
+            <!-- Community Links -->
+            <div class="space-y-2.5">
+              <p class="font-pixel text-[9px] text-brand-yellow tracking-wider uppercase">COMMUNITY</p>
+              <ul class="space-y-1.5 text-zinc-300">
+                <li>
+                  <NuxtLink to="/first-time" class="hover:text-white transition-colors">
+                    First Time Here?
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink to="/schedule" class="hover:text-white transition-colors">
+                    Weekly Schedule
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink to="/about" class="hover:text-white transition-colors">
+                    About Us
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink to="/vault" class="hover:text-white transition-colors">
+                    The Vault
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Get Involved -->
+            <div class="space-y-2.5">
+              <p class="font-pixel text-[9px] text-purple-400 tracking-wider uppercase">GET INVOLVED</p>
+              <ul class="space-y-1.5 text-zinc-300">
+                <li>
+                  <NuxtLink to="/join-the-crew" class="hover:text-white transition-colors">
+                    Join The Crew
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink to="/connect" class="hover:text-white transition-colors">
+                    Pastoral Care
+                  </NuxtLink>
+                </li>
+                <li>
+                  <NuxtLink to="/login" class="hover:text-white transition-colors">
+                    Servant Portal
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Location -->
+            <div class="space-y-2.5">
+              <p class="font-pixel text-[9px] text-zinc-500 tracking-wider uppercase">CAMPUS</p>
+              <div class="space-y-1.5 text-zinc-300 text-xs">
+                <p>Arrow Gen Hall</p>
+                <p class="text-zinc-500">Sat 5 PM • Sun 10 AM</p>
+                <a
+                  href="https://maps.google.com/?q=Arrow+Gen+Church"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-brand-yellow hover:text-brand-yellow-hover transition-colors inline-flex items-center gap-1"
+                >
+                  <span>Directions</span>
+                  <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- Copyright & Credits -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-zinc-400">
-          <div class="flex items-center gap-2.5">
-            <img
-              src="/logo-arrow.png"
-              alt="Arrow Gen Logo"
-              width="16"
-              height="16"
-              loading="lazy"
-              decoding="async"
-              class="pixel-logo h-4 w-auto object-contain shrink-0 opacity-80"
-            />
-            <span class="font-pixel text-[11px] text-zinc-300">ARROW GEN</span>
-            <span class="text-zinc-700">|</span>
-            <p>© 2026 Arrow Gen. All rights reserved.</p>
-          </div>
+        <!-- Row 2: Baseline -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-zinc-900 text-zinc-500 text-[11px]">
+          
+          <p>© 2026 Arrow Gen Church. All rights reserved.</p>
 
-          <p class="text-zinc-400">
-            Powered by <span class="text-purple-400 font-medium">Nuxt 3</span> • <span class="text-brand-yellow font-medium">Tailwind CSS</span>
+          <p class="font-pixel text-[9px] text-zinc-500 tracking-wider">
+            "LIKE ARROWS IN THE HANDS OF A WARRIOR" — PSA 127:4
           </p>
+
+          <button
+            type="button"
+            class="text-zinc-500 hover:text-brand-yellow transition-colors font-pixel text-[10px] cursor-pointer inline-flex items-center gap-1"
+            @click="scrollToTop"
+          >
+            <span>TOP</span>
+            <span aria-hidden="true">↑</span>
+          </button>
+
         </div>
 
       </div>
@@ -300,6 +361,12 @@
 import { ref } from 'vue'
 
 const isMobileMenuOpen = ref(false)
+
+const scrollToTop = () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 // 7 Halaman Publik Sesuai Ketentuan
 interface NavLink {
